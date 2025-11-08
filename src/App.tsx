@@ -1,5 +1,9 @@
 import { Component, ReactNode } from 'react';
 import MainApp from './components/MainApp';
+import TestApp from './TestApp';
+
+// Mode test: changez à false pour charger l'app complète
+const TEST_MODE = true;
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -48,6 +52,12 @@ class ErrorBoundary extends Component<
 }
 
 function App() {
+  console.log('App component rendering, TEST_MODE:', TEST_MODE);
+
+  if (TEST_MODE) {
+    return <TestApp />;
+  }
+
   return (
     <ErrorBoundary>
       <MainApp />
