@@ -176,7 +176,11 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => setShowCreateJob(true)}
+              onClick={() => {
+                console.log('Button clicked!');
+                setShowCreateJob(true);
+                console.log('showCreateJob set to true');
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
             >
               <Plus className="w-5 h-5" />
@@ -415,14 +419,17 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       </main>
 
       {showCreateJob && (
-        <JobRequestForm
-          clientId={userId}
-          onSuccess={() => {
-            setShowCreateJob(false);
-            loadData();
-          }}
-          onCancel={() => setShowCreateJob(false)}
-        />
+        <div>
+          {console.log('Rendering JobRequestForm modal')}
+          <JobRequestForm
+            clientId={userId}
+            onSuccess={() => {
+              setShowCreateJob(false);
+              loadData();
+            }}
+            onCancel={() => setShowCreateJob(false)}
+          />
+        </div>
       )}
     </div>
   );
