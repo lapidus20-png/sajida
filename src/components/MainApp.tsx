@@ -153,14 +153,23 @@ export default function MainApp() {
 
       {user.user_type === 'client' ? (
         <ClientDashboard userId={user.id} onLogout={handleLogout} />
-      ) : user.user_type === 'artisan' && artisan ? (
-        <ArtisanDashboard artisanId={artisan.id} userId={user.id} onLogout={handleLogout} />
+      ) : user.user_type === 'artisan' ? (
+        artisan ? (
+          <ArtisanDashboard artisanId={artisan.id} userId={user.id} onLogout={handleLogout} />
+        ) : (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Chargement de votre profil artisan...</p>
+            </div>
+          </div>
+        )
       ) : user.user_type === 'admin' ? (
         <AdminDashboard onLogout={handleLogout} />
       ) : (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">
-            <p className="text-gray-600">Profil non trouvé. Veuillez réessayer.</p>
+            <p className="text-gray-600">Type de profil non reconnu.</p>
             <button
               onClick={handleLogout}
               className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"

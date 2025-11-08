@@ -91,6 +91,25 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
         });
 
       if (userError) throw new Error(userError.message);
+
+      if (userType === 'artisan') {
+        const { error: artisanError } = await supabase
+          .from('artisans')
+          .insert({
+            user_id: authData.user.id,
+            nom: '',
+            prenom: '',
+            telephone: formData.telephone,
+            email: formData.email,
+            ville: formData.ville,
+            adresse: formData.adresse,
+            metier: '',
+            disponible: true,
+          });
+
+        if (artisanError) throw new Error(artisanError.message);
+      }
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
