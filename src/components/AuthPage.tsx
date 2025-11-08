@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { LogIn, UserPlus, Mail, Lock, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, Phone, MapPin, AlertCircle, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import ClientDashboard from './ClientDashboard';
 
 interface AuthPageProps {
   onSuccess: () => void;
@@ -11,6 +12,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   const [userType, setUserType] = useState<'client' | 'artisan'>('client');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [demoMode, setDemoMode] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,6 +20,25 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     adresse: '',
     ville: '',
   });
+
+  if (demoMode) {
+    return (
+      <div className="relative">
+        <div className="fixed top-4 right-4 z-50 flex gap-3">
+          <button
+            onClick={() => setDemoMode(false)}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg font-medium transition-colors"
+          >
+            Quitter la démo
+          </button>
+          <div className="bg-amber-500 text-white px-4 py-2 rounded-lg shadow-lg font-medium">
+            Mode Démo
+          </div>
+        </div>
+        <ClientDashboard userId="demo" onLogout={() => setDemoMode(false)} />
+      </div>
+    );
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelect>) => {
     const { name, value } = e.target;
@@ -248,9 +269,18 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           </div>
         </div>
 
-        <p className="text-center text-gray-600 text-sm mt-6">
-          Plateforme sécurisée pour artisans et particuliers
-        </p>
+        <div className="text-center mt-6">
+          <p className="text-gray-600 text-sm mb-4">
+            Plateforme sécurisée pour artisans et particuliers
+          </p>
+          <button
+            onClick={() => setDemoMode(true)}
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium px-6 py-2.5 rounded-lg shadow-md transition-all inline-flex items-center gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            Voir la démo
+          </button>
+        </div>
       </div>
     </div>
   );

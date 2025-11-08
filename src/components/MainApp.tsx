@@ -128,23 +128,7 @@ export default function MainApp() {
     );
   }
 
-  // Mode démo - afficher directement le dashboard client
-  const isDemoMode = window.location.search.includes('demo=true');
-
   if (!session || !user) {
-    if (isDemoMode) {
-      // Dashboard démo sans authentification
-      return (
-        <div className="relative">
-          <div className="fixed top-4 right-4 z-40 flex gap-3">
-            <div className="bg-amber-500 text-white px-4 py-2 rounded-lg shadow-md font-medium">
-              Mode Démo
-            </div>
-          </div>
-          <ClientDashboard userId="demo-user" onLogout={() => window.location.href = '/'} />
-        </div>
-      );
-    }
     return <AuthPage onSuccess={checkSession} />;
   }
 

@@ -17,8 +17,76 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
 
   useEffect(() => {
-    loadData();
+    if (userId === 'demo') {
+      loadDemoData();
+    } else {
+      loadData();
+    }
   }, [userId]);
+
+  const loadDemoData = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setJobRequests([
+        {
+          id: 'demo-1',
+          client_id: 'demo',
+          titre: 'Rénovation salle de bain',
+          description: 'Rénovation complète d\'une salle de bain de 8m² : changement carrelage, plomberie, électricité',
+          categorie: 'plomberie',
+          statut: 'publiee',
+          budget_estime: 2500000,
+          delai_souhaite: '2 mois',
+          ville: 'Ouagadougou',
+          adresse: 'Zone 1, Secteur 4',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          id: 'demo-2',
+          client_id: 'demo',
+          titre: 'Construction terrasse',
+          description: 'Construction d\'une terrasse extérieure en bois composite, 20m²',
+          categorie: 'maconnerie',
+          statut: 'en_negociation',
+          budget_estime: 1800000,
+          delai_souhaite: '1 mois',
+          ville: 'Bobo-Dioulasso',
+          adresse: 'Quartier Lafiabougou',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 86400000).toISOString(),
+        },
+        {
+          id: 'demo-3',
+          client_id: 'demo',
+          titre: 'Installation électrique',
+          description: 'Installation électrique complète pour nouvelle construction',
+          categorie: 'electricite',
+          statut: 'en_cours',
+          budget_estime: 3200000,
+          delai_souhaite: '3 semaines',
+          ville: 'Ouagadougou',
+          adresse: 'Ouaga 2000',
+          created_at: new Date(Date.now() - 172800000).toISOString(),
+          updated_at: new Date(Date.now() - 172800000).toISOString(),
+        },
+      ]);
+      setQuotes([
+        {
+          id: 'quote-1',
+          job_request_id: 'demo-2',
+          artisan_id: 'artisan-1',
+          montant: 1750000,
+          delai_realisation: '3 semaines',
+          description: 'Devis détaillé pour la construction de terrasse',
+          statut: 'soumis',
+          created_at: new Date(Date.now() - 43200000).toISOString(),
+          updated_at: new Date(Date.now() - 43200000).toISOString(),
+        },
+      ]);
+      setLoading(false);
+    }, 500);
+  };
 
   const loadData = async () => {
     setLoading(true);
