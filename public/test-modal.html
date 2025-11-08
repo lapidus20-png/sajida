@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <button
+            onclick="showModal()"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg"
+        >
+            Ouvrir Modal
+        </button>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-blue-600 to-teal-600 p-6 text-white flex items-center justify-between">
+                <h2 class="text-2xl font-bold">Test Modal</h2>
+                <button onclick="hideModal()" class="hover:bg-white hover:bg-opacity-20 p-2 rounded-lg">
+                    ✕
+                </button>
+            </div>
+
+            <div class="p-6">
+                <h3 class="text-xl font-semibold mb-4">Le modal fonctionne!</h3>
+                <p class="text-gray-600 mb-4">
+                    Si vous voyez ceci, alors les modals fonctionnent correctement dans votre navigateur.
+                </p>
+                <button
+                    onclick="hideModal()"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+                >
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showModal() {
+            console.log('Opening modal...');
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function hideModal() {
+            console.log('Closing modal...');
+            document.getElementById('modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
