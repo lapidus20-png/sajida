@@ -146,15 +146,6 @@ export default function MainApp() {
 
   return (
     <div className="relative">
-      <div className="fixed top-4 left-4 z-50 bg-yellow-100 border border-yellow-400 p-4 rounded-lg text-xs max-w-md">
-        <div><strong>Debug Info:</strong></div>
-        <div>Session: {session ? 'Yes' : 'No'}</div>
-        <div>User: {user ? 'Yes' : 'No'}</div>
-        <div>User Type: {user?.user_type || 'N/A'}</div>
-        <div>User ID: {user?.id?.substring(0, 8) || 'N/A'}</div>
-        <div>Artisan: {artisan ? 'Yes' : 'No'}</div>
-      </div>
-
       <div className="fixed top-4 right-4 z-40 flex gap-3">
         <button
           onClick={() => setShowHelp(true)}
