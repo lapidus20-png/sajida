@@ -79,42 +79,46 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      let attempts = 0;
-      let userCreated = false;
-
-      while (attempts < 5 && !userCreated) {
-        const { data: userData, error: checkError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', authData.user.id)
-          .maybeSingle();
-
-        if (userData) {
-          userCreated = true;
-          break;
-        }
-
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      if (!userCreated) {
-        throw new Error('Erreur lors de la création du profil. Veuillez réessayer.');
-      }
-
-      const { error: updateError } = await supabase
+      const { data: existingUser } = await supabase
         .from('users')
-        .update({
-          user_type: userType,
-          telephone: formData.telephone,
-          adresse: formData.adresse,
-          ville: formData.ville,
-        })
-        .eq('id', authData.user.id);
+        .select('id')
+        .eq('id', authData.user.id)
+        .maybeSingle();
 
-      if (updateError) throw new Error(updateError.message);
+      if (!existingUser) {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            email: authData.user.email,
+            user_type: userType,
+            telephone: formData.telephone,
+            adresse: formData.adresse,
+            ville: formData.ville,
+          });
+
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          throw new Error(`Erreur création profil: ${insertError.message}`);
+        }
+      } else {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            user_type: userType,
+            telephone: formData.telephone,
+            adresse: formData.adresse,
+            ville: formData.ville,
+          })
+          .eq('id', authData.user.id);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          throw new Error(`Erreur mise à jour profil: ${updateError.message}`);
+        }
+      }
 
       if (userType === 'artisan') {
         const { error: artisanError } = await supabase
@@ -131,11 +135,15 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
             disponible: true,
           });
 
-        if (artisanError) throw new Error(artisanError.message);
+        if (artisanError) {
+          console.error('Artisan error:', artisanError);
+          throw new Error(`Erreur profil artisan: ${artisanError.message}`);
+        }
       }
 
       onSuccess();
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
     } finally {
       setLoading(false);
