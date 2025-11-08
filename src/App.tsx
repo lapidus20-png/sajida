@@ -3,7 +3,7 @@ import MainApp from './components/MainApp';
 import TestApp from './TestApp';
 
 // Mode test: changez à false pour charger l'app complète
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
