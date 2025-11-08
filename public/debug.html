@@ -3,153 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debug BuilderHub</title>
+    <title>Test Modal Debug</title>
     <style>
         body {
-            font-family: 'Courier New', monospace;
-            max-width: 900px;
-            margin: 20px auto;
+            font-family: Arial, sans-serif;
             padding: 20px;
-            background: #1a1a1a;
-            color: #00ff00;
+            background: #f5f5f5;
         }
-        .log {
-            background: #000;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            border: 1px solid #333;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .log p {
-            margin: 5px 0;
-            font-size: 13px;
-        }
-        .error { color: #ff4444; }
-        .success { color: #44ff44; }
-        .info { color: #4444ff; }
-        .warning { color: #ffaa00; }
-        button {
-            background: #00ff00;
-            color: #000;
+        .button {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            margin: 5px;
-            font-weight: bold;
+            font-size: 16px;
         }
-        button:hover { background: #44ff44; }
-        h1 { color: #00ff00; text-align: center; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+        }
     </style>
 </head>
 <body>
-    <h1>🔍 DEBUG CONSOLE - BUILDERHUB</h1>
+    <h1>Test Modal</h1>
+    <button class="button" onclick="openModal()">Ouvrir Modal</button>
 
-    <div>
-        <button onclick="testConnection()">Test Connexion</button>
-        <button onclick="checkAuth()">Vérifier Auth</button>
-        <button onclick="clearLogs()">Clear</button>
-        <button onclick="window.location.href='/'">Retour App</button>
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <h2>Modal Ouvert!</h2>
+            <button class="button" onclick="closeModal()">Fermer</button>
+        </div>
     </div>
 
-    <div class="log" id="logs">
-        <p class="info">⏳ En attente de commandes...</p>
-    </div>
-
-    <script type="module">
-        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-        const SUPABASE_URL = 'https://fldkqlardekarhibnyyx.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGtxbGFyZGVrYXJoaWJueXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNzg3OTksImV4cCI6MjA3NzY1NDc5OX0.Tx3px0qD74K_6p6OCbT_InyOZZ5mb3i48XY-IHfrUXY';
-
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-        const logsDiv = document.getElementById('logs');
-
-        function log(message, type = 'info') {
-            const p = document.createElement('p');
-            p.className = type;
-            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logsDiv.appendChild(p);
-            logsDiv.scrollTop = logsDiv.scrollHeight;
-            console.log(message);
+    <script>
+        console.log('Page chargée');
+        function openModal() {
+            console.log('Bouton cliqué!');
+            document.getElementById('myModal').classList.add('active');
         }
-
-        window.clearLogs = () => {
-            logsDiv.innerHTML = '<p class="info">⏳ Logs cleared</p>';
-        };
-
-        window.testConnection = async () => {
-            log('🔄 Test de connexion à Supabase...', 'info');
-
-            try {
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('count')
-                    .limit(1);
-
-                if (error) {
-                    log(`❌ Erreur: ${error.message}`, 'error');
-                } else {
-                    log('✅ Connexion Supabase OK', 'success');
-                }
-            } catch (err) {
-                log(`❌ Exception: ${err.message}`, 'error');
-            }
-        };
-
-        window.checkAuth = async () => {
-            log('🔄 Vérification authentification...', 'info');
-
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-
-                if (error) {
-                    log(`❌ Erreur session: ${error.message}`, 'error');
-                    return;
-                }
-
-                if (!session) {
-                    log('⚠️  Aucune session active', 'warning');
-                    return;
-                }
-
-                log(`✅ Session trouvée pour: ${session.user.email}`, 'success');
-                log(`   User ID: ${session.user.id}`, 'info');
-
-                // Charger les données utilisateur
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .maybeSingle();
-
-                if (userError) {
-                    log(`❌ Erreur user data: ${userError.message}`, 'error');
-                    log(`   Code: ${userError.code}`, 'error');
-                    log(`   Details: ${userError.details}`, 'error');
-                    log(`   Hint: ${userError.hint}`, 'error');
-                } else if (!userData) {
-                    log('⚠️  Utilisateur non trouvé dans la table users', 'warning');
-                } else {
-                    log(`✅ User data trouvée:`, 'success');
-                    log(`   Email: ${userData.email}`, 'info');
-                    log(`   Type: ${userData.user_type}`, 'info');
-                    log(`   Ville: ${userData.ville}`, 'info');
-                }
-
-            } catch (err) {
-                log(`❌ Exception: ${err.message}`, 'error');
-            }
-        };
-
-        // Auto-test au chargement
-        log('🚀 Debug console initialisée', 'success');
-        setTimeout(() => {
-            testConnection();
-            checkAuth();
-        }, 500);
+        function closeModal() {
+            document.getElementById('myModal').classList.remove('active');
+        }
     </script>
 </body>
 </html>
