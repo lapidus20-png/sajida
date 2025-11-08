@@ -71,38 +71,29 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     setLoading(true);
 
     try {
-      console.log('Starting registration...', { email: formData.email, userType });
-
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
       });
 
-      console.log('Auth signup result:', authData, authError);
-
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      console.log('Creating user profile for:', authData.user.id);
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const { error: userError } = await supabase
+      const { error: updateError } = await supabase
         .from('users')
-        .insert({
-          id: authData.user.id,
+        .update({
           user_type: userType,
-          email: formData.email,
           telephone: formData.telephone,
           adresse: formData.adresse,
           ville: formData.ville,
-        });
+        })
+        .eq('id', authData.user.id);
 
-      console.log('User insert result - error:', userError);
-
-      if (userError) throw new Error(userError.message);
+      if (updateError) throw new Error(updateError.message);
 
       if (userType === 'artisan') {
-        console.log('Creating artisan profile...');
-
         const { error: artisanError } = await supabase
           .from('artisans')
           .insert({
@@ -117,15 +108,11 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
             disponible: true,
           });
 
-        console.log('Artisan insert result - error:', artisanError);
-
         if (artisanError) throw new Error(artisanError.message);
       }
 
-      console.log('Registration successful, calling onSuccess...');
       onSuccess();
     } catch (err) {
-      console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
     } finally {
       setLoading(false);
