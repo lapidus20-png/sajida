@@ -79,7 +79,30 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      let attempts = 0;
+      let userCreated = false;
+
+      while (attempts < 5 && !userCreated) {
+        const { data: userData, error: checkError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+
+        if (userData) {
+          userCreated = true;
+          break;
+        }
+
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      if (!userCreated) {
+        throw new Error('Erreur lors de la création du profil. Veuillez réessayer.');
+      }
 
       const { error: updateError } = await supabase
         .from('users')
