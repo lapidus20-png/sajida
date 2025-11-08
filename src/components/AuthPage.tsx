@@ -71,13 +71,19 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     setLoading(true);
 
     try {
+      console.log('Starting registration...', { email: formData.email, userType });
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
       });
 
+      console.log('Auth signup result:', authData, authError);
+
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
+
+      console.log('Creating user profile for:', authData.user.id);
 
       const { error: userError } = await supabase
         .from('users')
@@ -90,9 +96,13 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           ville: formData.ville,
         });
 
+      console.log('User insert result - error:', userError);
+
       if (userError) throw new Error(userError.message);
 
       if (userType === 'artisan') {
+        console.log('Creating artisan profile...');
+
         const { error: artisanError } = await supabase
           .from('artisans')
           .insert({
@@ -107,11 +117,15 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
             disponible: true,
           });
 
+        console.log('Artisan insert result - error:', artisanError);
+
         if (artisanError) throw new Error(artisanError.message);
       }
 
+      console.log('Registration successful, calling onSuccess...');
       onSuccess();
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
     } finally {
       setLoading(false);

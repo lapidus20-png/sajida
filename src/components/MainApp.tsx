@@ -39,13 +39,23 @@ export default function MainApp() {
 
   const loadUserData = async (userId: string) => {
     try {
+      console.log('Loading user data for:', userId);
+
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
+      console.log('User data:', userData, 'Error:', userError);
+
       if (userError) throw userError;
+
+      if (!userData) {
+        console.warn('No user data found for userId:', userId);
+        return;
+      }
+
       setUser(userData);
 
       if (userData?.user_type === 'artisan') {
@@ -55,11 +65,13 @@ export default function MainApp() {
           .eq('user_id', userId)
           .maybeSingle();
 
+        console.log('Artisan data:', artisanData, 'Error:', artisanError);
+
         if (artisanError) throw artisanError;
         setArtisan(artisanData);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error loading user data:', error);
     }
   };
 
