@@ -91,7 +91,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           description_travaux: 'Devis détaillé pour la construction de terrasse en bois composite',
           materiel_fourni: ['Bois composite', 'Visserie inox', 'Structure aluminium'],
           conditions_paiement: '30% à la commande, 40% à mi-parcours, 30% à la livraison',
-          statut: 'soumis',
+          statut: 'en_attente',
           validite_jusqu_au: new Date(Date.now() + 2592000000).toISOString().split('T')[0],
           created_at: new Date(Date.now() - 43200000).toISOString(),
           updated_at: new Date(Date.now() - 43200000).toISOString(),
@@ -419,17 +419,14 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       </main>
 
       {showCreateJob && (
-        <div>
-          {console.log('Rendering JobRequestForm modal')}
-          <JobRequestForm
-            clientId={userId}
-            onSuccess={() => {
-              setShowCreateJob(false);
-              loadData();
-            }}
-            onCancel={() => setShowCreateJob(false)}
-          />
-        </div>
+        <JobRequestForm
+          clientId={userId}
+          onSuccess={() => {
+            setShowCreateJob(false);
+            loadData();
+          }}
+          onCancel={() => setShowCreateJob(false)}
+        />
       )}
     </div>
   );
