@@ -167,12 +167,15 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Mes Demandes</h1>
-            <p className="text-sm text-gray-600">Gérez vos projets de rénovation</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 burkina-gradient burkina-star rounded"></div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Mes Demandes</h1>
+              <p className="text-sm text-gray-600">Gérez vos projets de rénovation</p>
+            </div>
           </div>
           <div className="flex gap-3">
             <button
@@ -181,7 +184,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                 setShowCreateJob(true);
                 console.log('showCreateJob set to true');
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              className="bg-gradient-to-r from-red-600 to-green-600 hover:from-red-700 hover:to-green-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
             >
               <Plus className="w-5 h-5" />
               Nouvelle demande
@@ -246,7 +249,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                 onClick={() => setActiveTab('demandes')}
                 className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
                   activeTab === 'demandes'
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-red-600 text-red-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -257,7 +260,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                 onClick={() => setActiveTab('devis')}
                 className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
                   activeTab === 'devis'
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-green-600 text-green-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -268,7 +271,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                 onClick={() => setActiveTab('stats')}
                 className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
                   activeTab === 'stats'
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-green-600 text-green-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >

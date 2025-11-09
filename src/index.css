@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.burkina-gradient {
+  background: linear-gradient(to bottom,
+    #EF2B2D 0%,
+    #EF2B2D 50%,
+    #00A651 50%,
+    #00A651 100%
+  );
+}
+
+.burkina-star {
+  position: relative;
+}
+
+.burkina-star::before {
+  content: "⭐";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  color: #FCD116;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
