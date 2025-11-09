@@ -71,6 +71,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     setLoading(true);
 
     try {
+      // Step 1: Create auth user (trigger will auto-create user profile)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -79,47 +80,26 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Step 2: Wait for trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const { data: existingUser } = await supabase
+      // Step 3: Update user profile with additional info (trigger created it with defaults)
+      const { error: updateError } = await supabase
         .from('users')
-        .select('id')
-        .eq('id', authData.user.id)
-        .maybeSingle();
+        .update({
+          user_type: userType,
+          telephone: formData.telephone,
+          adresse: formData.adresse,
+          ville: formData.ville,
+        })
+        .eq('id', authData.user.id);
 
-      if (!existingUser) {
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            user_type: userType,
-            telephone: formData.telephone,
-            adresse: formData.adresse,
-            ville: formData.ville,
-          });
-
-        if (insertError) {
-          console.error('Insert error:', insertError);
-          throw new Error(`Erreur création profil: ${insertError.message}`);
-        }
-      } else {
-        const { error: updateError } = await supabase
-          .from('users')
-          .update({
-            user_type: userType,
-            telephone: formData.telephone,
-            adresse: formData.adresse,
-            ville: formData.ville,
-          })
-          .eq('id', authData.user.id);
-
-        if (updateError) {
-          console.error('Update error:', updateError);
-          throw new Error(`Erreur mise à jour profil: ${updateError.message}`);
-        }
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw new Error(`Erreur mise à jour profil: ${updateError.message}`);
       }
 
+      // Step 4: If artisan, create artisan profile
       if (userType === 'artisan') {
         const { error: artisanError } = await supabase
           .from('artisans')
