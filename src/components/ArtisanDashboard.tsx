@@ -1,0 +1,394 @@
+import { useState, useEffect } from 'react';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation } from 'lucide-react';
+import { supabase, JobRequest, Quote, Artisan, calculateDistance } from '../lib/supabase';
+import QuoteForm from './QuoteForm';
+
+interface ArtisanDashboardProps {
+  artisanId: string;
+  userId: string;
+  onLogout: () => void;
+}
+
+export default function ArtisanDashboard({ artisanId, userId, onLogout }: ArtisanDashboardProps) {
+  const [artisan, setArtisan] = useState<Artisan | null>(null);
+  const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
+  const [myQuotes, setMyQuotes] = useState<Quote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'profil'>('opportunites');
+  const [showCreateQuote, setShowCreateQuote] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
+
+  useEffect(() => {
+    loadData();
+  }, [artisanId]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const { data: artisanData, error: artisanError } = await supabase
+        .from('artisans')
+        .select('*')
+        .eq('id', artisanId)
+        .maybeSingle();
+
+      if (artisanError) throw artisanError;
+      setArtisan(artisanData);
+
+      const { data: jobsData, error: jobsError } = await supabase
+        .from('job_requests')
+        .select('*')
+        .eq('statut', 'publiee')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (jobsError) throw jobsError;
+      setJobRequests(jobsData || []);
+
+      const { data: quotesData, error: quotesError } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('artisan_id', artisanId)
+        .order('created_at', { ascending: false });
+
+      if (quotesError) throw quotesError;
+      setMyQuotes(quotesData || []);
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditProfile = () => {
+    setActiveTab('profil');
+  };
+
+  const handleUpdateProfile = async (updates: Partial<Artisan>) => {
+    try {
+      const { error } = await supabase
+        .from('artisans')
+        .update(updates)
+        .eq('id', artisanId);
+
+      if (error) throw error;
+      setArtisan({ ...artisan!, ...updates });
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  const stats = {
+    profil: artisan ? {
+      note: artisan.note_moyenne,
+      verification: artisan.statut_verification,
+      experience: artisan.annees_experience,
+    } : null,
+    quotes: {
+      total: myQuotes.length,
+      acceptes: myQuotes.filter(q => q.statut === 'accepte').length,
+      en_attente: myQuotes.filter(q => q.statut === 'en_attente').length,
+      refuses: myQuotes.filter(q => q.statut === 'refuse').length,
+    },
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Espace Artisan</h1>
+            <p className="text-sm text-gray-600">{artisan?.nom} {artisan?.prenom}</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleEditProfile}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Mon profil
+            </button>
+            <button
+              onClick={onLogout}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Déconnexion
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {stats.profil && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Note moyenne</p>
+                  <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.profil.note.toFixed(1)}/5</p>
+                </div>
+                <Star className="w-12 h-12 text-yellow-500 opacity-20" />
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Mes devis</p>
+                  <p className="text-3xl font-bold text-emerald-600 mt-1">{stats.quotes.total}</p>
+                </div>
+                <FileText className="w-12 h-12 text-emerald-500 opacity-20" />
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Acceptés</p>
+                  <p className="text-3xl font-bold text-green-600 mt-1">{stats.quotes.acceptes}</p>
+                </div>
+                <CheckCircle className="w-12 h-12 text-green-500 opacity-20" />
+              </div>
+            </div>
+
+            <div className={`bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">Vérification</p>
+                  <p className={`text-sm font-bold mt-1 ${
+                    stats.profil.verification === 'verifie' ? 'text-green-600' :
+                    stats.profil.verification === 'rejete' ? 'text-red-600' :
+                    'text-yellow-600'
+                  }`}>
+                    {stats.profil.verification === 'verifie' ? '✓ Vérifié' :
+                     stats.profil.verification === 'rejete' ? '✗ Rejeté' :
+                     '⏳ En attente'}
+                  </p>
+                </div>
+                <AlertCircle className="w-12 h-12 text-blue-500 opacity-20" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="border-b border-gray-200">
+            <div className="flex flex-wrap gap-0">
+              <button
+                onClick={() => setActiveTab('opportunites')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'opportunites'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 inline mr-2" />
+                Opportunités
+              </button>
+              <button
+                onClick={() => setActiveTab('mes-devis')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'mes-devis'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FileText className="w-4 h-4 inline mr-2" />
+                Mes devis ({stats.quotes.total})
+              </button>
+              <button
+                onClick={() => setActiveTab('profil')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'profil'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Mon profil
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+              </div>
+            ) : activeTab === 'opportunites' ? (
+              jobRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Aucune opportunité disponible</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {jobRequests.map(job => {
+                    const distance =
+                      artisan?.latitude && artisan?.longitude && job.latitude && job.longitude
+                        ? calculateDistance(artisan.latitude, artisan.longitude, job.latitude, job.longitude)
+                        : null;
+
+                    return (
+                      <div
+                        key={job.id}
+                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow hover:border-emerald-300"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-gray-900">{job.titre}</h3>
+                              {distance !== null && (
+                                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                                  <Navigation className="w-3 h-3" />
+                                  {distance} km
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
+                            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+                              <span>📍 {job.localisation}</span>
+                              <span>💰 {job.budget_min.toLocaleString()} - {job.budget_max.toLocaleString()} FCFA</span>
+                              <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedJob(job);
+                              setShowCreateQuote(true);
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap"
+                          >
+                            Répondre
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : activeTab === 'mes-devis' ? (
+              myQuotes.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-6">Vous n'avez pas encore créé de devis</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {myQuotes.map(quote => {
+                    const job = jobRequests.find(j => j.id === quote.job_request_id);
+                    return (
+                      <div key={quote.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-1">Devis #{quote.id.slice(0, 8)}</h3>
+                            <p className="text-gray-600 text-sm mb-3">{quote.description_travaux.substring(0, 100)}...</p>
+                            <div className="flex flex-wrap gap-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                quote.statut === 'accepte' ? 'bg-green-100 text-green-800' :
+                                quote.statut === 'refuse' ? 'bg-red-100 text-red-800' :
+                                quote.statut === 'expire' ? 'bg-gray-100 text-gray-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {quote.statut}
+                              </span>
+                              <span className="text-gray-600">⏱️ {quote.delai_execution} jours</span>
+                              <span className="text-gray-600">📅 Valide jusqu'au {new Date(quote.validite_jusqu_au).toLocaleDateString('fr-FR')}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-emerald-600">
+                              {quote.montant_total.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-600">FCFA</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : artisan ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations de base</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Métier</label>
+                        <p className="text-gray-900 font-medium">{artisan.metier}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Années d'expérience</label>
+                        <input
+                          type="number"
+                          value={artisan.annees_experience}
+                          onChange={(e) => handleUpdateProfile({ annees_experience: parseInt(e.target.value) })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tarif horaire (FCFA)</label>
+                        <input
+                          type="number"
+                          value={artisan.tarif_horaire}
+                          onChange={(e) => handleUpdateProfile({ tarif_horaire: parseInt(e.target.value) })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Certifications et sécurité</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={artisan.assurance_rcpro}
+                          onChange={(e) => handleUpdateProfile({ assurance_rcpro: e.target.checked })}
+                          className="w-5 h-5 rounded"
+                        />
+                        <label className="text-gray-700">Assurance RC Pro active</label>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Description des services</label>
+                        <textarea
+                          value={artisan.description}
+                          onChange={(e) => handleUpdateProfile({ description: e.target.value })}
+                          rows={4}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <p className="text-sm text-emerald-800">
+                    <strong>Status de vérification:</strong> {artisan.statut_verification === 'verifie' ? '✓ Votre profil est vérifié' :
+                    artisan.statut_verification === 'rejete' ? '✗ Votre profil a été rejeté' :
+                    '⏳ Votre profil est en attente de vérification'}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </main>
+
+      {showCreateQuote && selectedJob && (
+        <QuoteForm
+          jobRequest={selectedJob}
+          artisanId={artisanId}
+          onSuccess={() => {
+            setShowCreateQuote(false);
+            setSelectedJob(null);
+            loadData();
+          }}
+          onCancel={() => {
+            setShowCreateQuote(false);
+            setSelectedJob(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}

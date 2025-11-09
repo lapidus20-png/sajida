@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .box {
+            background: white;
+            padding: 3rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin: 0 0 1rem 0;
+        }
+        p {
+            color: #666;
+            margin: 0;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>✅ Serveur Fonctionne!</h1>
+        <p class="success">Le serveur web est opérationnel</p>
+        <p style="margin-top: 1rem;">Si vous voyez cette page, le problème vient de l'application React</p>
+    </div>
+    <script>
+        console.log('TEST PAGE LOADED SUCCESSFULLY');
+    </script>
+</body>
+</html>

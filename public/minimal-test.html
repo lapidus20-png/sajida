@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Minimal</title>
+</head>
+<body>
+    <h1>Test Minimal</h1>
+    <button id="btn" style="padding: 20px; font-size: 20px; background: blue; color: white; border: none; cursor: pointer;">
+        CLIQUEZ ICI
+    </button>
+    
+    <div id="result" style="margin-top: 20px; padding: 20px; background: yellow;"></div>
+
+    <script>
+        alert('La page est chargée!');
+        
+        document.getElementById('btn').onclick = function() {
+            alert('Bouton cliqué!');
+            document.getElementById('result').innerHTML = '<h2>ÇA MARCHE!</h2>';
+        };
+    </script>
+</body>
+</html>
