@@ -71,7 +71,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     setLoading(true);
 
     try {
-      // Step 1: Create auth user (trigger will auto-create user profile)
+      // Step 1: Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -80,23 +80,17 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      // Step 2: Wait for trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Step 2: Create user profile using RPC function
+      const { data: profileData, error: profileError } = await supabase.rpc('create_user_profile', {
+        p_user_type: userType,
+        p_telephone: formData.telephone,
+        p_adresse: formData.adresse,
+        p_ville: formData.ville,
+      });
 
-      // Step 3: Update user profile with additional info (trigger created it with defaults)
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          user_type: userType,
-          telephone: formData.telephone,
-          adresse: formData.adresse,
-          ville: formData.ville,
-        })
-        .eq('id', authData.user.id);
-
-      if (updateError) {
-        console.error('Update error:', updateError);
-        throw new Error(`Erreur mise à jour profil: ${updateError.message}`);
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw new Error(`Erreur création profil: ${profileError.message}`);
       }
 
       // Step 4: If artisan, create artisan profile
