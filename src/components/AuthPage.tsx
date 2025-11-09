@@ -80,13 +80,17 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      // Step 2: Create user profile using RPC function
-      const { data: profileData, error: profileError } = await supabase.rpc('create_user_profile', {
-        p_user_type: userType,
-        p_telephone: formData.telephone,
-        p_adresse: formData.adresse,
-        p_ville: formData.ville,
-      });
+      // Step 2: Create user profile directly
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email: formData.email,
+          user_type: userType,
+          telephone: formData.telephone,
+          adresse: formData.adresse,
+          ville: formData.ville,
+        });
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
