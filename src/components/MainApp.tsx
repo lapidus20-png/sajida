@@ -17,14 +17,27 @@ export default function MainApp() {
   const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Loading timeout - forcing to show auth page');
+        setLoading(false);
+      }
+    }, 3000);
+
     checkSession();
     setupAuthListener();
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const checkSession = async () => {
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        setLoading(false);
+        return;
+      }
 
       if (sessionData.session) {
         setSession(sessionData.session);
