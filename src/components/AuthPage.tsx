@@ -31,7 +31,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           >
             Quitter la démo
           </button>
-          <div className="bg-amber-500 text-white px-4 py-2 rounded-lg shadow-lg font-medium">
+          <div className="bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg font-medium">
             Mode Démo
           </div>
         </div>
@@ -151,12 +151,15 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-8 text-white">
-            <h1 className="text-3xl font-bold mb-2">BuilderHub</h1>
-            <p className="text-blue-100">Plateforme de mise en relation</p>
+          <div className="relative burkina-gradient p-8 text-white">
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 burkina-star"></div>
+            <div className="relative z-10">
+              <h1 className="text-3xl font-bold mb-2 text-center text-white drop-shadow-lg">BuilderHub</h1>
+              <p className="text-white text-center drop-shadow">Plateforme de mise en relation</p>
+            </div>
           </div>
 
           <div className="p-8">
@@ -168,7 +171,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                 }}
                 className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
                   mode === 'login'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -182,7 +185,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                 }}
                 className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
                   mode === 'register'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-green-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -192,7 +195,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
             </div>
 
             {mode === 'register' && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <p className="text-sm font-medium text-gray-700 mb-3">Je suis:</p>
                 <div className="flex gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -238,7 +241,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="votre@email.com"
                 />
               </div>
@@ -255,7 +258,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                   onChange={handleInputChange}
                   required
                   minLength={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="Minimum 6 caractères"
                 />
               </div>
@@ -273,7 +276,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                       value={formData.telephone}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                       placeholder="+226 XXXXXXXX"
                     />
                   </div>
@@ -288,7 +291,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                       name="adresse"
                       value={formData.adresse}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                       placeholder="Votre adresse"
                     />
                   </div>
@@ -302,7 +305,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                       name="ville"
                       value={formData.ville}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                       placeholder="Ouagadougou, Bobo-Dioulasso..."
                     />
                   </div>
@@ -312,7 +315,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 rounded-lg transition-colors mt-6"
+                className="w-full bg-gradient-to-r from-red-600 to-green-600 hover:from-red-700 hover:to-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition-all mt-6"
               >
                 {loading ? 'Veuillez patienter...' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
               </button>
