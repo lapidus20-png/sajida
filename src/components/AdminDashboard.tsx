@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, Users, AlertCircle, TrendingUp, CheckCircle, Clock, Activity } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import PaymentTestPanel from './PaymentTestPanel';
 
 interface AdminStats {
   users: {
@@ -34,7 +35,7 @@ interface AdminDashboardProps {
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'jobs' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'jobs' | 'reports' | 'payments'>('overview');
 
   useEffect(() => {
     loadAdminStats();
@@ -216,6 +217,16 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   >
                     Rapports
                   </button>
+                  <button
+                    onClick={() => setActiveTab('payments')}
+                    className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                      activeTab === 'payments'
+                        ? 'border-blue-500 text-blue-400'
+                        : 'border-transparent text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    Tests Paiements
+                  </button>
                 </div>
               </div>
 
@@ -326,6 +337,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <p>Rapports détaillés en développement</p>
                     </div>
                   </div>
+                )}
+
+                {activeTab === 'payments' && (
+                  <PaymentTestPanel />
                 )}
               </div>
             </div>
