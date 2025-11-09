@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogIn, UserPlus, Mail, Lock, Phone, MapPin, AlertCircle, Eye } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, Phone, MapPin, AlertCircle, Eye, Wrench, Hammer, Droplet, Leaf, Zap, Paintbrush } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ClientDashboard from './ClientDashboard';
 
@@ -156,6 +156,22 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="relative burkina-gradient text-white" style={{ height: '160px' }}>
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 burkina-star z-30"></div>
+
+            <div className="absolute top-4 left-4 flex gap-2 opacity-20">
+              <Zap className="w-5 h-5 text-yellow-300" />
+              <Hammer className="w-5 h-5 text-yellow-300" />
+            </div>
+
+            <div className="absolute top-4 right-4 flex gap-2 opacity-20">
+              <Droplet className="w-5 h-5 text-blue-300" />
+              <Leaf className="w-5 h-5 text-green-300" />
+            </div>
+
+            <div className="absolute bottom-4 left-4 flex gap-2 opacity-20">
+              <Wrench className="w-5 h-5 text-gray-300" />
+              <Paintbrush className="w-5 h-5 text-pink-300" />
+            </div>
+
             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-8">
               <h1 className="text-3xl font-bold mb-2 text-center text-white drop-shadow-lg">BuilderHub</h1>
               <p className="text-white text-center drop-shadow">Plateforme de mise en relation</p>
