@@ -154,9 +154,9 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="relative burkina-gradient p-8 text-white">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 burkina-star"></div>
-            <div className="relative z-10">
+          <div className="relative burkina-gradient text-white" style={{ height: '160px' }}>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 burkina-star z-30"></div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-8">
               <h1 className="text-3xl font-bold mb-2 text-center text-white drop-shadow-lg">BuilderHub</h1>
               <p className="text-white text-center drop-shadow">Plateforme de mise en relation</p>
             </div>
