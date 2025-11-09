@@ -114,14 +114,18 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       setJobRequests(jobsData || []);
 
       if (jobsData && jobsData.length > 0) {
+        const jobIds = jobsData.map(j => j.id);
+
         const { data: quotesData, error: quotesError } = await supabase
           .from('quotes')
           .select('*')
-          .in('job_request_id', jobsData.map(j => j.id))
+          .in('job_request_id', jobIds)
           .order('created_at', { ascending: false });
 
         if (quotesError) throw quotesError;
         setQuotes(quotesData || []);
+      } else {
+        setQuotes([]);
       }
     } catch (error) {
       console.error('Erreur:', error);

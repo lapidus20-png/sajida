@@ -79,7 +79,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const { data: existingUser } = await supabase
         .from('users')

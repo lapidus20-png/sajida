@@ -22,12 +22,15 @@ export default function MainApp() {
         console.warn('Loading timeout - forcing to show auth page');
         setLoading(false);
       }
-    }, 3000);
+    }, 2000);
 
     checkSession();
-    setupAuthListener();
+    const unsubscribe = setupAuthListener();
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   const checkSession = async () => {
@@ -52,36 +55,30 @@ export default function MainApp() {
 
   const loadUserData = async (userId: string) => {
     try {
-      console.log('Loading user data for:', userId);
+      const [userResult, artisanResult] = await Promise.all([
+        supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle(),
+        supabase
+          .from('artisans')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle()
+      ]);
 
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      if (userResult.error) throw userResult.error;
 
-      console.log('User data:', userData, 'Error:', userError);
-
-      if (userError) throw userError;
-
-      if (!userData) {
+      if (!userResult.data) {
         console.warn('No user data found for userId:', userId);
         return;
       }
 
-      setUser(userData);
+      setUser(userResult.data);
 
-      if (userData?.user_type === 'artisan') {
-        const { data: artisanData, error: artisanError } = await supabase
-          .from('artisans')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        console.log('Artisan data:', artisanData, 'Error:', artisanError);
-
-        if (artisanError) throw artisanError;
-        setArtisan(artisanData);
+      if (userResult.data.user_type === 'artisan' && artisanResult.data) {
+        setArtisan(artisanResult.data);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
