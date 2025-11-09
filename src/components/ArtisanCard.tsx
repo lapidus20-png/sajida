@@ -1,5 +1,6 @@
 import { Star, Phone, MapPin, Briefcase, Navigation } from 'lucide-react';
-import { Artisan, calculateDistance } from '../lib/supabase';
+import { Artisan } from '../lib/supabase';
+import { calculateDistance, formatDistance, getDistanceColor } from '../lib/distanceUtils';
 
 interface ArtisanCardProps {
   artisan: Artisan;
@@ -30,9 +31,9 @@ export default function ArtisanCard({ artisan, onContact, userLat, userLng }: Ar
           </span>
         )}
         {distance !== null && (
-          <span className="absolute bottom-3 left-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
-            <Navigation className="w-3 h-3" />
-            {distance} km
+          <span className={`absolute bottom-3 left-3 text-xs px-3 py-1.5 rounded-full flex items-center gap-1 font-semibold border ${getDistanceColor(distance)}`}>
+            <Navigation className="w-3.5 h-3.5" />
+            {formatDistance(distance)}
           </span>
         )}
       </div>
