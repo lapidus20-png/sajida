@@ -16,14 +16,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 
 .burkina-star::after {
   content: "";
   position: absolute;
-  width: 50%;
-  height: 50%;
+  width: 32px;
+  height: 32px;
   background-color: #FCD116;
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  z-index: 20;
 }
