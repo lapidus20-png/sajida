@@ -71,44 +71,28 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     setLoading(true);
 
     try {
-      // Step 1: Create auth user with auto-confirm
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            user_type: userType,
-            telephone: formData.telephone,
-            adresse: formData.adresse,
-            ville: formData.ville,
-          }
-        }
       });
 
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      // Wait a moment for auth to complete
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 2: Create user profile directly
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          email: formData.email,
-          user_type: userType,
-          telephone: formData.telephone,
-          adresse: formData.adresse,
-          ville: formData.ville,
-        });
+      const { data: profileData, error: profileError } = await supabase.rpc('create_user_profile', {
+        user_type: userType,
+        telephone: formData.telephone,
+        adresse: formData.adresse,
+        ville: formData.ville,
+      });
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
         throw new Error(`Erreur création profil: ${profileError.message}`);
       }
 
-      // Step 3: If artisan, create artisan profile
       if (userType === 'artisan') {
         const { error: artisanError } = await supabase
           .from('artisans')
@@ -126,12 +110,8 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
 
         if (artisanError) {
           console.error('Artisan error:', artisanError);
-          throw new Error(`Erreur profil artisan: ${artisanError.message}`);
         }
       }
-
-      // Wait a bit more to ensure data is committed
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       onSuccess();
     } catch (err) {
