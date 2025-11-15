@@ -55,6 +55,13 @@ export default function MainApp() {
 
   const loadUserData = async (userId: string) => {
     try {
+      // First, ensure user profile exists (creates if missing)
+      const { error: ensureError } = await supabase.rpc('ensure_user_profile');
+      if (ensureError) {
+        console.error('Error ensuring user profile:', ensureError);
+      }
+
+      // Now load user data
       const [userResult, artisanResult] = await Promise.all([
         supabase
           .from('users')
@@ -72,6 +79,7 @@ export default function MainApp() {
 
       if (!userResult.data) {
         console.warn('No user data found for userId:', userId);
+        await supabase.auth.signOut();
         return;
       }
 
@@ -82,6 +90,7 @@ export default function MainApp() {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+      await supabase.auth.signOut();
     }
   };
 
