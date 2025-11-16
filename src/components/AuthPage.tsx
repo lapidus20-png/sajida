@@ -19,6 +19,9 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     telephone: '',
     adresse: '',
     ville: '',
+    nom: '',
+    prenom: '',
+    metier: '',
   });
 
   if (demoMode) {
@@ -98,18 +101,19 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           .from('artisans')
           .insert({
             user_id: authData.user.id,
-            nom: '',
-            prenom: '',
+            nom: formData.nom,
+            prenom: formData.prenom,
             telephone: formData.telephone,
             email: formData.email,
-            ville: formData.ville,
-            adresse: formData.adresse,
-            metier: '',
+            ville: formData.ville || '',
+            adresse: formData.adresse || '',
+            metier: formData.metier,
             disponible: true,
           });
 
         if (artisanError) {
           console.error('Artisan error:', artisanError);
+          throw new Error(`Erreur création profil artisan: ${artisanError.message}`);
         }
       }
 
@@ -258,6 +262,38 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
 
               {mode === 'register' && (
                 <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom
+                      </label>
+                      <input
+                        type="text"
+                        name="nom"
+                        value={formData.nom}
+                        onChange={handleInputChange}
+                        required={userType === 'artisan'}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        placeholder="Votre nom"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Prénom
+                      </label>
+                      <input
+                        type="text"
+                        name="prenom"
+                        value={formData.prenom}
+                        onChange={handleInputChange}
+                        required={userType === 'artisan'}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        placeholder="Votre prénom"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <Phone className="w-4 h-4 inline mr-2" />
@@ -273,6 +309,35 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                       placeholder="+226 XXXXXXXX"
                     />
                   </div>
+
+                  {userType === 'artisan' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Métier
+                      </label>
+                      <select
+                        name="metier"
+                        value={formData.metier}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      >
+                        <option value="">Sélectionnez votre métier</option>
+                        <option value="Plombier">Plombier</option>
+                        <option value="Électricien">Électricien</option>
+                        <option value="Maçon">Maçon</option>
+                        <option value="Menuisier">Menuisier</option>
+                        <option value="Peintre">Peintre</option>
+                        <option value="Carreleur">Carreleur</option>
+                        <option value="Jardinier">Jardinier</option>
+                        <option value="Mécanicien">Mécanicien</option>
+                        <option value="Soudeur">Soudeur</option>
+                        <option value="Couturier">Couturier</option>
+                        <option value="Coiffeur">Coiffeur</option>
+                        <option value="Autre">Autre</option>
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
