@@ -22,7 +22,7 @@ export default function MainApp() {
         console.warn('Loading timeout - forcing to show auth page');
         setLoading(false);
       }
-    }, 2000);
+    }, 5000);
 
     checkSession();
     const unsubscribe = setupAuthListener();
@@ -55,13 +55,6 @@ export default function MainApp() {
 
   const loadUserData = async (userId: string) => {
     try {
-      // First, ensure user profile exists (creates if missing)
-      const { error: ensureError } = await supabase.rpc('ensure_user_profile');
-      if (ensureError) {
-        console.error('Error ensuring user profile:', ensureError);
-      }
-
-      // Now load user data
       const [userResult, artisanResult] = await Promise.all([
         supabase
           .from('users')
@@ -79,7 +72,13 @@ export default function MainApp() {
 
       if (!userResult.data) {
         console.warn('No user data found for userId:', userId);
-        await supabase.auth.signOut();
+        const { error: ensureError } = await supabase.rpc('ensure_user_profile');
+        if (ensureError) {
+          console.error('Error creating user profile:', ensureError);
+          await supabase.auth.signOut();
+          return;
+        }
+        window.location.reload();
         return;
       }
 
