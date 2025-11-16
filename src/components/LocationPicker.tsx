@@ -48,9 +48,28 @@ export default function LocationPicker({
         setLoading(false);
       },
       (error) => {
-        setError('Impossible d\'obtenir votre position. Veuillez entrer manuellement.');
+        let errorMessage = 'Impossible d\'obtenir votre position';
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Accès à la localisation refusé. Veuillez autoriser l'accès dans les paramètres de votre navigateur.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Position indisponible. Vérifiez votre connexion GPS/WiFi.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Délai d'attente dépassé. Veuillez réessayer.";
+            break;
+        }
+
+        setError(errorMessage + ' Veuillez entrer manuellement.');
         setLoading(false);
         console.error('Geolocation error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
       }
     );
   };

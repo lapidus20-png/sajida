@@ -37,7 +37,9 @@ export default function GoogleMapPicker({
     const loader = new GoogleMapsLoader({
       apiKey,
       version: 'weekly',
-      libraries: ['places', 'geocoding'],
+      libraries: ['places', 'geocoding', 'marker'],
+      language: 'fr',
+      region: 'BF',
     });
 
     loader
@@ -49,8 +51,24 @@ export default function GoogleMapPicker({
           center: { lat: latitude, lng: longitude },
           zoom: 13,
           mapTypeControl: true,
-          streetViewControl: false,
-          fullscreenControl: false,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+            position: google.maps.ControlPosition.TOP_RIGHT,
+          },
+          streetViewControl: true,
+          streetViewControlOptions: {
+            position: google.maps.ControlPosition.RIGHT_BOTTOM,
+          },
+          fullscreenControl: true,
+          fullscreenControlOptions: {
+            position: google.maps.ControlPosition.RIGHT_TOP,
+          },
+          zoomControl: true,
+          zoomControlOptions: {
+            position: google.maps.ControlPosition.RIGHT_CENTER,
+          },
+          gestureHandling: 'greedy',
+          clickableIcons: true,
         });
 
         mapInstanceRef.current = map;
@@ -146,9 +164,28 @@ export default function GoogleMapPicker({
         setLoading(false);
       },
       (error) => {
-        setError("Impossible d'obtenir votre position");
+        let errorMessage = "Impossible d'obtenir votre position";
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Accès à la localisation refusé. Veuillez autoriser l'accès dans les paramètres de votre navigateur.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Position indisponible. Vérifiez votre connexion GPS/WiFi.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Délai d'attente dépassé. Veuillez réessayer.";
+            break;
+        }
+
+        setError(errorMessage);
         setLoading(false);
         console.error('Geolocation error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
       }
     );
   };
