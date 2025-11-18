@@ -11,6 +11,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [userType, setUserType] = useState<'client' | 'artisan'>('client');
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [demoMode, setDemoMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -74,6 +75,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
     setLoading(true);
 
     try {
+      setLoadingMessage('Création du compte...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -82,8 +84,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
+      setLoadingMessage('Configuration du profil...');
       const { data: profileData, error: profileError } = await supabase.rpc('create_user_profile', {
         user_type: userType,
         telephone: formData.telephone,
@@ -97,6 +98,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       }
 
       if (userType === 'artisan') {
+        setLoadingMessage('Création du profil artisan...');
         const { error: artisanError } = await supabase
           .from('artisans')
           .insert({
@@ -117,12 +119,14 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
         }
       }
 
+      setLoadingMessage('Connexion en cours...');
       onSuccess();
     } catch (err) {
       console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
     } finally {
       setLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -375,7 +379,14 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-red-600 to-green-600 hover:from-red-700 hover:to-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition-all mt-6"
               >
-                {loading ? 'Veuillez patienter...' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {loadingMessage || 'Veuillez patienter...'}
+                  </span>
+                ) : (
+                  mode === 'login' ? 'Se connecter' : 'Créer mon compte'
+                )}
               </button>
             </form>
           </div>
