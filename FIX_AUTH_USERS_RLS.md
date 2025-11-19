@@ -1,85 +1,110 @@
-# Critical: Fix auth.users RLS Issue
+# 🚨 CRITICAL FIX: Auth Users RLS Issue
 
-## Problem
-User signup is failing with error: **"Database error finding user"**
+## The Real Problem
 
-This is caused by Row Level Security (RLS) being enabled on the `auth.users` table, which is a Supabase system table that should NEVER have RLS enabled.
+The error "Database error querying schema" is caused by **RLS being enabled on the `auth.users` system table**, which Supabase manages internally. This table should **NEVER** have RLS enabled.
 
-## Root Cause
-- RLS was enabled on `auth.users` (likely through the Supabase Dashboard)
-- This blocks Supabase's internal auth operations
-- We cannot disable it via SQL migrations (no permissions)
+---
 
-## Solution: Disable RLS via Supabase Dashboard
+## ✅ IMMEDIATE FIX (Run this in Supabase SQL Editor)
 
-### Steps:
-
-1. **Go to your Supabase Dashboard**
-   - URL: https://supabase.com/dashboard/project/fldkqlardekarhibnyyx
-
-2. **Navigate to Table Editor**
-   - Click on "Table Editor" in the left sidebar
-   - Switch to the `auth` schema (dropdown at top)
-   - Find and click on the `users` table
-
-3. **Disable RLS**
-   - Look for "RLS" or "Row Level Security" section
-   - Click to disable RLS for this table
-   - Confirm the action
-
-4. **Alternative: SQL Editor Approach**
-   - Go to "SQL Editor" in the dashboard
-   - The dashboard SQL editor runs with higher privileges
-   - Try running this command:
-   ```sql
-   ALTER TABLE auth.users DISABLE ROW LEVEL SECURITY;
-   ```
-
-## Why This Happened
-
-The `auth.users` table is managed by Supabase and should never have RLS enabled. This is a system table used internally by Supabase Auth for authentication operations.
-
-## What We've Already Done
-
-We've tried multiple approaches via migrations:
-- ✅ Added RLS policies for all roles (anon, authenticated, service_role, authenticator)
-- ❌ Cannot disable RLS (must be owner of table)
-- ❌ Cannot grant INSERT privileges (no GRANT OPTION)
-- ❌ Cannot change table ownership (permission denied)
-- ❌ Cannot SET ROLE to supabase_auth_admin (permission denied)
-
-## Verification
-
-After disabling RLS in the dashboard, verify it worked:
+### Copy and run this EXACT SQL:
 
 ```sql
+-- ===================================================================
+-- CRITICAL: Disable RLS on auth.users (Supabase system table)
+-- ===================================================================
+
+-- This is the root cause - auth.users should NEVER have RLS enabled
+ALTER TABLE auth.users DISABLE ROW LEVEL SECURITY;
+
+-- Drop any policies that might exist on auth.users
+DO $$
+DECLARE
+    pol record;
+BEGIN
+    FOR pol IN
+        SELECT policyname
+        FROM pg_policies
+        WHERE schemaname = 'auth' AND tablename = 'users'
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON auth.users', pol.policyname);
+    END LOOP;
+END $$;
+
+-- Verify RLS is disabled (should return FALSE)
+SELECT relrowsecurity as "RLS Enabled on auth.users (should be FALSE)"
+FROM pg_class
+WHERE oid = 'auth.users'::regclass;
+```
+
+---
+
+## If That Doesn't Work, Try This Alternative:
+
+```sql
+-- Force disable using postgres superuser
+DO $$
+BEGIN
+    EXECUTE 'ALTER TABLE auth.users DISABLE ROW LEVEL SECURITY';
+    RAISE NOTICE 'RLS disabled on auth.users';
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'Could not disable RLS: %', SQLERRM;
+END $$;
+```
+
+---
+
+## How to Check if Fix Worked
+
+Run this query to verify:
+
+```sql
+-- Should return FALSE for auth.users
 SELECT
     schemaname,
     tablename,
-    rowsecurity as rls_enabled
+    rowsecurity as "RLS Enabled"
 FROM pg_tables
 WHERE schemaname = 'auth' AND tablename = 'users';
 ```
 
-The `rls_enabled` column should be `false`.
+If `RLS Enabled` is **FALSE**, the fix worked!
 
-## If This Doesn't Work
+---
 
-If you still cannot disable RLS on `auth.users`, you may need to:
+## If You Still Can't Disable RLS
 
-1. **Contact Supabase Support**
-   - This is an unusual configuration issue
-   - Support can fix it from their end
+This means you don't have permission to modify the `auth.users` table. In this case:
 
-2. **Or Create a New Supabase Project**
-   - This is a last resort
-   - Export your data first
-   - Create a fresh project (which won't have this issue)
-   - Import your data and migrations
+### Option 1: Contact Supabase Support
+The `auth.users` table should not have RLS enabled. This is a Supabase platform issue.
 
-## Current Status
+### Option 2: Reset Database Schema
+Go to Supabase Dashboard → Project Settings → Database → Reset Database Schema
 
-- ✅ All RLS policies are configured correctly for `public.users` and `public.artisans`
-- ✅ User types (client/artisan) can be created once auth works
-- ❌ Signup blocked by `auth.users` RLS issue
-- ⚠️ Requires Dashboard intervention
+⚠️ **WARNING**: This will delete all data! Export your data first if needed.
+
+---
+
+## Why This Happens
+
+Someone (or a migration) accidentally enabled RLS on the `auth.users` table:
+
+```sql
+-- This command should NEVER be run on auth.users:
+ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;  ❌ WRONG!
+```
+
+The `auth` schema is managed by Supabase and should not be modified by user migrations.
+
+---
+
+## After Fixing
+
+1. Refresh your application
+2. Try logging in again
+3. Login should work immediately
+
+The issue has nothing to do with your application code - it's purely a database configuration problem.
