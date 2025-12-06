@@ -45,15 +45,35 @@ async function main() {
   });
 
   try {
-    // Get admin email
-    const email = await question('Enter admin email: ');
+    // Get credentials from command line args or prompt
+    let email, password;
+
+    if (process.argv[2] && process.argv[3]) {
+      email = process.argv[2];
+      password = process.argv[3];
+      console.log('Using credentials from command line arguments\n');
+    } else {
+      // Get admin email
+      email = await question('Enter admin email: ');
+      if (!email || !email.includes('@')) {
+        console.error('❌ Invalid email address');
+        process.exit(1);
+      }
+
+      // Get admin password
+      password = await question('Enter admin password (min 6 characters): ');
+      if (!password || password.length < 6) {
+        console.error('❌ Password must be at least 6 characters');
+        process.exit(1);
+      }
+    }
+
+    // Validate
     if (!email || !email.includes('@')) {
       console.error('❌ Invalid email address');
       process.exit(1);
     }
 
-    // Get admin password
-    const password = await question('Enter admin password (min 6 characters): ');
     if (!password || password.length < 6) {
       console.error('❌ Password must be at least 6 characters');
       process.exit(1);
