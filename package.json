@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "create-admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
