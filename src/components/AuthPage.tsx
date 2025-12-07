@@ -79,61 +79,21 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            user_type: userType,
+            telephone: formData.telephone || '',
+            adresse: formData.adresse || '',
+            ville: formData.ville || '',
+            nom: formData.nom || '',
+            prenom: formData.prenom || '',
+            metier: formData.metier || '',
+          }
+        }
       });
 
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
-
-      setLoadingMessage('Configuration du profil...');
-
-      if (userType === 'artisan') {
-        const [userResult, artisanResult] = await Promise.all([
-          supabase.from('users').insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            user_type: userType,
-            telephone: formData.telephone || '',
-            adresse: formData.adresse || '',
-            ville: formData.ville || '',
-          }),
-          supabase.from('artisans').insert({
-            user_id: authData.user.id,
-            nom: formData.nom,
-            prenom: formData.prenom,
-            telephone: formData.telephone,
-            email: formData.email,
-            ville: formData.ville || '',
-            adresse: formData.adresse || '',
-            metier: formData.metier,
-            disponible: true,
-          })
-        ]);
-
-        if (userResult.error) {
-          console.error('Profile creation error:', userResult.error);
-          throw new Error(`Erreur création profil: ${userResult.error.message}`);
-        }
-        if (artisanResult.error) {
-          console.error('Artisan creation error:', artisanResult.error);
-          throw new Error(`Erreur création profil artisan: ${artisanResult.error.message}`);
-        }
-      } else {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            user_type: userType,
-            telephone: formData.telephone || '',
-            adresse: formData.adresse || '',
-            ville: formData.ville || '',
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          throw new Error(`Erreur création profil: ${profileError.message}`);
-        }
-      }
 
       setLoadingMessage('Connexion en cours...');
       onSuccess();
