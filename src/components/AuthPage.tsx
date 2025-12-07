@@ -79,21 +79,45 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            user_type: userType,
-            telephone: formData.telephone || '',
-            adresse: formData.adresse || '',
-            ville: formData.ville || '',
-            nom: formData.nom || '',
-            prenom: formData.prenom || '',
-            metier: formData.metier || '',
-          }
-        }
       });
 
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Impossible de créer le compte');
+
+      setLoadingMessage('Configuration du profil...');
+
+      if (userType === 'artisan') {
+        await Promise.all([
+          supabase.from('users').insert({
+            id: authData.user.id,
+            email: authData.user.email,
+            user_type: userType,
+            telephone: formData.telephone || null,
+            adresse: formData.adresse || null,
+            ville: formData.ville || null,
+          }),
+          supabase.from('artisans').insert({
+            user_id: authData.user.id,
+            nom: formData.nom,
+            prenom: formData.prenom,
+            telephone: formData.telephone,
+            email: formData.email,
+            ville: formData.ville || '',
+            adresse: formData.adresse || '',
+            metier: formData.metier,
+            disponible: true,
+          })
+        ]);
+      } else {
+        await supabase.from('users').insert({
+          id: authData.user.id,
+          email: authData.user.email,
+          user_type: userType,
+          telephone: formData.telephone || null,
+          adresse: formData.adresse || null,
+          ville: formData.ville || null,
+        });
+      }
 
       setLoadingMessage('Connexion en cours...');
       onSuccess();
