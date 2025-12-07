@@ -77,15 +77,9 @@ export default function MainApp() {
           return loadUserData(userId, retryCount + 1);
         }
 
-        console.warn('No user data found after retries, creating profile...');
-        const { error: ensureError } = await supabase.rpc('ensure_user_profile');
-        if (ensureError) {
-          console.error('Error creating user profile:', ensureError);
-          await supabase.auth.signOut();
-          return;
-        }
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return loadUserData(userId, retryCount + 1);
+        console.error('No user data found after retries. Please contact support.');
+        await supabase.auth.signOut();
+        return;
       }
 
       setUser(userResult.data);

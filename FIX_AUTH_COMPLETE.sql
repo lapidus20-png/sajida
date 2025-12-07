@@ -1,5 +1,7 @@
--- RUN THIS IN SUPABASE SQL EDITOR
--- This will fix authentication for admin, client, and artisan
+-- =====================================================
+-- COMPLETE AUTHENTICATION FIX
+-- Run this in Supabase SQL Editor
+-- =====================================================
 
 -- Step 1: Drop all problematic triggers
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users CASCADE;
@@ -67,20 +69,38 @@ CREATE INDEX IF NOT EXISTS idx_users_user_type ON public.users(user_type);
 -- Password: your_secure_password
 -- Then run this to add them to public.users:
 
-DO $$
-BEGIN
-  INSERT INTO public.users (id, email, user_type, telephone, adresse, ville)
-  SELECT
-    id,
-    email,
-    'admin',
-    NULL,
-    NULL,
-    NULL
-  FROM auth.users
-  WHERE email = 'admin@builderhub.com'
-  ON CONFLICT (id) DO UPDATE SET user_type = 'admin';
-EXCEPTION
-  WHEN OTHERS THEN
-    NULL;
-END $$;
+-- This will work after you create the admin in Supabase Auth
+INSERT INTO public.users (id, email, user_type, telephone, adresse, ville)
+SELECT
+  id,
+  email,
+  'admin',
+  NULL,
+  NULL,
+  NULL
+FROM auth.users
+WHERE email = 'admin@builderhub.com'
+ON CONFLICT (id) DO UPDATE SET user_type = 'admin';
+
+-- =====================================================
+-- VERIFICATION QUERIES (run these to check if it worked)
+-- =====================================================
+
+-- Check if RLS is disabled (should show 'f' for false)
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname = 'public'
+AND tablename IN ('users', 'artisans');
+
+-- Check if policies exist (should return 0 rows)
+SELECT tablename, policyname
+FROM pg_policies
+WHERE schemaname = 'public'
+AND tablename IN ('users', 'artisans');
+
+-- Check if telephone is nullable (should show YES)
+SELECT column_name, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+AND table_name = 'users'
+AND column_name = 'telephone';
