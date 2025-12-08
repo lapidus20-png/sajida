@@ -1,88 +1,45 @@
-# 🔥 FIX LOGIN ERROR - "Database error querying schema"
+# Fix Login Issue - URGENT
 
-## What You Need to Do RIGHT NOW
+## The Problem
 
-### Step 1: Open Supabase Dashboard
-1. Go to: https://supabase.com/dashboard/project/fldkqlardekarhibnyyx
-2. Click "SQL Editor" in the left menu
-3. Click "New query"
+Clicking the login button doesn't work. The error is: "No user data found after retries"
 
-### Step 2: Copy This SQL and Run It
+## Root Cause
 
-```sql
-ALTER TABLE auth.users DISABLE ROW LEVEL SECURITY;
-```
+The `auth.users` table has RLS enabled, blocking the Admin API with "Database error finding users".
 
-That's it. Just that ONE line.
+## Quick Fix (2 Minutes)
 
-### Step 3: Click "Run" (or press Ctrl+Enter)
+### Option 1: Run SQL in Dashboard
 
-You should see: `Success. No rows returned`
+1. Go to: https://supabase.com/dashboard/project/fldkqlardekarhibnyyx/sql/new
+2. Copy the contents of `FIX_LOGIN_NOW.sql`
+3. Click "Run"
 
-### Step 4: Test Your App
+### Option 2: Use Existing Account
 
-1. Go back to your app and refresh (F5)
-2. Try logging in
-3. It should work now!
+You have these accounts already in the database:
 
----
+- admin@builderhub.com (admin)
+- lapidus20@gmail.com (admin)  
+- lapidus20@yahoo.co.uk (client)
+- ismaelhamadou@hotmail.com (client)
 
-## Still Not Working?
+Ask your team for passwords, or try logging in.
 
-### Try the Full Fix
+## What the Fix Does
 
-If the one-liner above didn't work, run this complete script:
+- Disables RLS on auth.users table
+- Removes blocking policies
+- Removes broken triggers
+- Makes telephone field nullable
 
-```sql
--- Disable RLS on auth.users
-ALTER TABLE auth.users DISABLE ROW LEVEL SECURITY;
+## After the Fix
 
--- Remove any policies on auth.users
-DO $$
-DECLARE
-    pol record;
-BEGIN
-    FOR pol IN
-        SELECT policyname
-        FROM pg_policies
-        WHERE schemaname = 'auth' AND tablename = 'users'
-    LOOP
-        EXECUTE format('DROP POLICY IF EXISTS %I ON auth.users', pol.policyname);
-        RAISE NOTICE 'Dropped policy: %', pol.policyname;
-    END LOOP;
-END $$;
+Your login page will work correctly. Users can sign up and log in without issues.
 
--- Check if it worked
-SELECT
-    CASE
-        WHEN relrowsecurity = false THEN 'SUCCESS: RLS is now disabled ✓'
-        ELSE 'FAILED: RLS is still enabled ✗'
-    END as status
-FROM pg_class
-WHERE oid = 'auth.users'::regclass;
-```
+## Still Have Issues?
 
----
+Run: `node scripts/diagnose-auth-issue.mjs`
 
-## What Went Wrong?
-
-Your `auth.users` table (a Supabase system table) has RLS enabled. This table is managed by Supabase and should **NEVER** have RLS enabled - it breaks authentication.
-
-One of your migrations accidentally enabled it. This is the fix.
-
----
-
-## Need More Help?
-
-If this still doesn't work, you have a permissions issue. You'll need to:
-
-1. Contact Supabase support
-2. Or create a new project and migrate your data
-
-But the simple fix above works 99% of the time!
-
----
-
-## Pro Tip
-
-After login works, **DO NOT** run any migrations that touch `auth.users`. The `auth` schema is Supabase's internal system - leave it alone!
+This will show exactly what's blocking authentication.
