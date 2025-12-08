@@ -87,7 +87,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       setLoadingMessage('Configuration du profil...');
 
       if (userType === 'artisan') {
-        await Promise.all([
+        const [userResult, artisanResult] = await Promise.all([
           supabase.from('users').insert({
             id: authData.user.id,
             email: authData.user.email,
@@ -108,8 +108,11 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
             disponible: true,
           })
         ]);
+
+        if (userResult.error) throw new Error(`User profile error: ${userResult.error.message}`);
+        if (artisanResult.error) throw new Error(`Artisan profile error: ${artisanResult.error.message}`);
       } else {
-        await supabase.from('users').insert({
+        const { error: userError } = await supabase.from('users').insert({
           id: authData.user.id,
           email: authData.user.email,
           user_type: userType,
@@ -117,13 +120,18 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           adresse: formData.adresse || null,
           ville: formData.ville || null,
         });
+
+        if (userError) throw new Error(`Database error: ${userError.message}`);
       }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       setLoadingMessage('Connexion en cours...');
       onSuccess();
     } catch (err) {
       console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
+      await supabase.auth.signOut();
     } finally {
       setLoading(false);
       setLoadingMessage('');
