@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "create-admin": "node scripts/create-admin.mjs",
-    "setup-storage": "node scripts/create-storage-buckets.mjs && node scripts/create-storage-policies.mjs"
+    "setup-storage": "node scripts/create-storage-buckets.mjs && node scripts/create-storage-policies.mjs",
+    "fix-auth": "node scripts/fix-auth-simple.mjs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
