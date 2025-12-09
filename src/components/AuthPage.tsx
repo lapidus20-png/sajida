@@ -124,8 +124,6 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
         if (userError) throw new Error(`Database error: ${userError.message}`);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       setLoadingMessage('Connexion en cours...');
       onSuccess();
     } catch (err) {

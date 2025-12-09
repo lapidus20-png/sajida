@@ -71,9 +71,9 @@ export default function MainApp() {
       if (userResult.error) throw userResult.error;
 
       if (!userResult.data) {
-        if (retryCount < 3) {
-          console.log(`User profile not found, retrying... (${retryCount + 1}/3)`);
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (retryCount < 2) {
+          console.log(`User profile not found, retrying... (${retryCount + 1}/2)`);
+          await new Promise(resolve => setTimeout(resolve, 300));
           return loadUserData(userId, retryCount + 1);
         }
 
