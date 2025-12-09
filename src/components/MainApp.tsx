@@ -53,7 +53,7 @@ export default function MainApp() {
     }
   };
 
-  const loadUserData = async (userId: string, retryCount = 0) => {
+  const loadUserData = async (userId: string) => {
     try {
       const [userResult, artisanResult] = await Promise.all([
         supabase
@@ -71,13 +71,7 @@ export default function MainApp() {
       if (userResult.error) throw userResult.error;
 
       if (!userResult.data) {
-        if (retryCount < 2) {
-          console.log(`User profile not found, retrying... (${retryCount + 1}/2)`);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          return loadUserData(userId, retryCount + 1);
-        }
-
-        console.error('No user data found after retries. Please contact support.');
+        console.error('No user data found. Please contact support.');
         await supabase.auth.signOut();
         return;
       }

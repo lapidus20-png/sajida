@@ -61,7 +61,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       });
 
       if (authError) throw new Error(authError.message);
-      onSuccess();
+      // Auth state change listener will handle the rest
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
     } finally {
@@ -124,8 +124,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
         if (userError) throw new Error(`Database error: ${userError.message}`);
       }
 
-      setLoadingMessage('Connexion en cours...');
-      onSuccess();
+      // Auth state change listener will handle the rest
     } catch (err) {
       console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
