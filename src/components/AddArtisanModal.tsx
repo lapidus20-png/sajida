@@ -165,7 +165,7 @@ export default function AddArtisanModal({ onClose, onSuccess }: AddArtisanModalP
     setLoading(true);
 
     try {
-      const { error } = await supabase.from('artisans').insert({
+      const insertData: any = {
         nom: formData.nom,
         prenom: formData.prenom,
         telephone: formData.telephone,
@@ -178,9 +178,22 @@ export default function AddArtisanModal({ onClose, onSuccess }: AddArtisanModalP
         disponible: true,
         latitude: location?.lat || null,
         longitude: location?.lng || null,
-        photo_url: photoUrl || null,
-        user_id: currentUserId || null
-      });
+        photo_url: photoUrl || null
+      };
+
+      if (currentUserId) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', currentUserId)
+          .single();
+
+        if (userData) {
+          insertData.user_id = currentUserId;
+        }
+      }
+
+      const { error } = await supabase.from('artisans').insert(insertData);
 
       if (error) throw error;
 
