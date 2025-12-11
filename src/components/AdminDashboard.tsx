@@ -43,40 +43,58 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadAdminStats = async () => {
     try {
-      const [usersRes, jobsRes, quotesRes, reviewsRes] = await Promise.all([
-        supabase.from('users').select('user_type', { count: 'exact' }),
-        supabase.from('job_requests').select('statut', { count: 'exact' }),
-        supabase.from('quotes').select('statut', { count: 'exact' }),
-        supabase.from('reviews').select('verified', { count: 'exact' }),
+      const [
+        usersTotal,
+        usersClients,
+        usersArtisans,
+        jobsTotal,
+        jobsPubliees,
+        jobsEnCours,
+        jobsTerminees,
+        quotesTotal,
+        quotesAcceptes,
+        quotesRefuses,
+        quotesEnAttente,
+        reviewsTotal,
+        reviewsVerified,
+      ] = await Promise.all([
+        supabase.from('users').select('*', { count: 'exact', head: true }),
+        supabase.from('users').select('*', { count: 'exact', head: true }).eq('user_type', 'client'),
+        supabase.from('users').select('*', { count: 'exact', head: true }).eq('user_type', 'artisan'),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'publiee'),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'en_cours'),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'terminee'),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'accepte'),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'refuse'),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+        supabase.from('reviews').select('*', { count: 'exact', head: true }),
+        supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('verified', true),
       ]);
-
-      const usersData = usersRes.data || [];
-      const jobsData = jobsRes.data || [];
-      const quotesData = quotesRes.data || [];
-      const reviewsData = reviewsRes.data || [];
 
       setStats({
         users: {
-          total: usersRes.count || 0,
-          clients: usersData.filter(u => u.user_type === 'client').length,
-          artisans: usersData.filter(u => u.user_type === 'artisan').length,
+          total: usersTotal.count || 0,
+          clients: usersClients.count || 0,
+          artisans: usersArtisans.count || 0,
         },
         jobs: {
-          total: jobsRes.count || 0,
-          publiees: jobsData.filter(j => j.statut === 'publiee').length,
-          en_cours: jobsData.filter(j => j.statut === 'en_cours').length,
-          terminees: jobsData.filter(j => j.statut === 'terminee').length,
+          total: jobsTotal.count || 0,
+          publiees: jobsPubliees.count || 0,
+          en_cours: jobsEnCours.count || 0,
+          terminees: jobsTerminees.count || 0,
         },
         quotes: {
-          total: quotesRes.count || 0,
-          acceptes: quotesData.filter(q => q.statut === 'accepte').length,
-          refuses: quotesData.filter(q => q.statut === 'refuse').length,
-          en_attente: quotesData.filter(q => q.statut === 'en_attente').length,
+          total: quotesTotal.count || 0,
+          acceptes: quotesAcceptes.count || 0,
+          refuses: quotesRefuses.count || 0,
+          en_attente: quotesEnAttente.count || 0,
         },
         reviews: {
-          total: reviewsRes.count || 0,
-          verified: reviewsData.filter(r => r.verified).length,
-          pending: reviewsData.filter(r => !r.verified).length,
+          total: reviewsTotal.count || 0,
+          verified: reviewsVerified.count || 0,
+          pending: (reviewsTotal.count || 0) - (reviewsVerified.count || 0),
         },
       });
     } catch (error) {

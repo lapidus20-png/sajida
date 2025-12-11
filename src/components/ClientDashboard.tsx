@@ -106,21 +106,24 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
     try {
       const { data: jobsData, error: jobsError } = await supabase
         .from('job_requests')
-        .select('*')
+        .select('id, client_id, titre, description, categorie, statut, budget_min, budget_max, ville, date_souhaitee, created_at')
         .eq('client_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (jobsError) throw jobsError;
       setJobRequests(jobsData || []);
+      setLoading(false);
 
       if (jobsData && jobsData.length > 0) {
         const jobIds = jobsData.map(j => j.id);
 
         const { data: quotesData, error: quotesError } = await supabase
           .from('quotes')
-          .select('*')
+          .select('id, job_request_id, artisan_id, montant, description, delai, statut, created_at')
           .in('job_request_id', jobIds)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
 
         if (quotesError) throw quotesError;
         setQuotes(quotesData || []);
@@ -129,7 +132,6 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       }
     } catch (error) {
       console.error('Erreur:', error);
-    } finally {
       setLoading(false);
     }
   };

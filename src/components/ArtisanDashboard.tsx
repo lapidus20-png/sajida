@@ -25,27 +25,30 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const loadData = async () => {
     setLoading(true);
     try {
-      const [artisanResult, jobsResult, quotesResult] = await Promise.all([
-        supabase
-          .from('artisans')
-          .select('*')
-          .eq('id', artisanId)
-          .maybeSingle(),
+      const artisanResult = await supabase
+        .from('artisans')
+        .select('id, user_id, nom, prenom, metier, note_moyenne, statut_verification, annees_experience, telephone, ville, latitude, longitude')
+        .eq('id', artisanId)
+        .maybeSingle();
+
+      if (artisanResult.error) throw artisanResult.error;
+      setArtisan(artisanResult.data);
+      setLoading(false);
+
+      const [jobsResult, quotesResult] = await Promise.all([
         supabase
           .from('job_requests')
-          .select('*')
+          .select('id, titre, description, ville, statut, budget_min, budget_max, created_at, latitude, longitude')
           .eq('statut', 'publiee')
           .order('created_at', { ascending: false })
           .limit(20),
         supabase
           .from('quotes')
-          .select('*')
+          .select('id, job_request_id, artisan_id, montant, description, delai, statut, created_at')
           .eq('artisan_id', artisanId)
           .order('created_at', { ascending: false })
+          .limit(50)
       ]);
-
-      if (artisanResult.error) throw artisanResult.error;
-      setArtisan(artisanResult.data);
 
       if (jobsResult.error) throw jobsResult.error;
       setJobRequests(jobsResult.data || []);
@@ -54,7 +57,6 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setMyQuotes(quotesResult.data || []);
     } catch (error) {
       console.error('Erreur:', error);
-    } finally {
       setLoading(false);
     }
   };
