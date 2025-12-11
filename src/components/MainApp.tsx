@@ -55,18 +55,11 @@ export default function MainApp() {
 
   const loadUserData = async (userId: string) => {
     try {
-      const [userResult, artisanResult] = await Promise.all([
-        supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle(),
-        supabase
-          .from('artisans')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle()
-      ]);
+      const userResult = await supabase
+        .from('users')
+        .select('id, email, user_type, telephone, adresse, ville, created_at')
+        .eq('id', userId)
+        .maybeSingle();
 
       if (userResult.error) throw userResult.error;
 
@@ -78,8 +71,16 @@ export default function MainApp() {
 
       setUser(userResult.data);
 
-      if (userResult.data.user_type === 'artisan' && artisanResult.data) {
-        setArtisan(artisanResult.data);
+      if (userResult.data.user_type === 'artisan') {
+        const artisanResult = await supabase
+          .from('artisans')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (artisanResult.data) {
+          setArtisan(artisanResult.data);
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -88,10 +89,12 @@ export default function MainApp() {
   };
 
   const setupAuthListener = () => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setSession(session);
-        await loadUserData(session.user.id);
+        (async () => {
+          await loadUserData(session.user.id);
+        })();
       } else {
         setSession(null);
         setUser(null);
