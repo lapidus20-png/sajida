@@ -78,8 +78,36 @@ export default function MainApp() {
           .eq('user_id', userId)
           .maybeSingle();
 
+        if (artisanResult.error) {
+          console.error('Error loading artisan:', artisanResult.error);
+        }
+
         if (artisanResult.data) {
           setArtisan(artisanResult.data);
+        } else {
+          const newArtisan = {
+            user_id: userId,
+            nom: userResult.data.email?.split('@')[0] || 'Artisan',
+            prenom: '',
+            metier: 'Non spécifié',
+            telephone: userResult.data.telephone || '',
+            ville: userResult.data.ville || '',
+            note_moyenne: 0,
+            statut_verification: 'en_attente' as const,
+            annees_experience: 0,
+          };
+
+          const { data: createdArtisan, error: createError } = await supabase
+            .from('artisans')
+            .insert(newArtisan)
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating artisan profile:', createError);
+          } else if (createdArtisan) {
+            setArtisan(createdArtisan);
+          }
         }
       }
     } catch (error) {
@@ -191,9 +219,23 @@ export default function MainApp() {
           <ArtisanDashboard artisanId={artisan.id} userId={user.id} onLogout={handleLogout} />
         ) : (
           <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="text-center">
+            <div className="text-center max-w-md mx-auto p-6">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Chargement de votre profil artisan...</p>
+              <p className="text-gray-600 mb-4">Configuration de votre profil artisan...</p>
+              <button
+                onClick={async () => {
+                  await loadUserData(user.id);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                Réessayer
+              </button>
+              <button
+                onClick={handleLogout}
+                className="ml-4 text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                Se déconnecter
+              </button>
             </div>
           </div>
         )
