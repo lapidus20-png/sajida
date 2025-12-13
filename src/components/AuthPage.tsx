@@ -87,29 +87,29 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       setLoadingMessage('Configuration du profil...');
 
       if (userType === 'artisan') {
-        const [userResult, artisanResult] = await Promise.all([
-          supabase.from('users').insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            user_type: userType,
-            telephone: formData.telephone || null,
-            adresse: formData.adresse || null,
-            ville: formData.ville || null,
-          }),
-          supabase.from('artisans').insert({
-            user_id: authData.user.id,
-            nom: formData.nom,
-            prenom: formData.prenom,
-            telephone: formData.telephone,
-            email: formData.email,
-            ville: formData.ville || '',
-            adresse: formData.adresse || '',
-            metier: formData.metier,
-            disponible: true,
-          })
-        ]);
+        const userResult = await supabase.from('users').insert({
+          id: authData.user.id,
+          email: authData.user.email,
+          user_type: userType,
+          telephone: formData.telephone || null,
+          adresse: formData.adresse || null,
+          ville: formData.ville || null,
+        });
 
         if (userResult.error) throw new Error(`User profile error: ${userResult.error.message}`);
+
+        const artisanResult = await supabase.from('artisans').insert({
+          user_id: authData.user.id,
+          nom: formData.nom,
+          prenom: formData.prenom,
+          telephone: formData.telephone,
+          email: formData.email,
+          ville: formData.ville || '',
+          adresse: formData.adresse || '',
+          metier: formData.metier,
+          disponible: true,
+        });
+
         if (artisanResult.error) throw new Error(`Artisan profile error: ${artisanResult.error.message}`);
       } else {
         const { error: userError } = await supabase.from('users').insert({
