@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2 } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen } from 'lucide-react';
 import { supabase, JobRequest, Quote } from '../lib/supabase';
 import JobRequestForm from './JobRequestForm';
+import DocumentGallery from './DocumentGallery';
 
 interface ClientDashboardProps {
   userId: string;
@@ -13,7 +14,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateJob, setShowCreateJob] = useState(false);
-  const [activeTab, setActiveTab] = useState<'demandes' | 'devis' | 'stats'>('demandes');
+  const [activeTab, setActiveTab] = useState<'demandes' | 'devis' | 'documents' | 'stats'>('demandes');
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
 
   useEffect(() => {
@@ -274,6 +275,17 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                 Devis reçus ({stats.devisRecus})
               </button>
               <button
+                onClick={() => setActiveTab('documents')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'documents'
+                    ? 'border-yellow-600 text-yellow-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <FolderOpen className="w-4 h-4 inline mr-2" />
+                Mes Documents
+              </button>
+              <button
                 onClick={() => setActiveTab('stats')}
                 className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
                   activeTab === 'stats'
@@ -380,6 +392,8 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                   })}
                 </div>
               )
+            ) : activeTab === 'documents' ? (
+              <DocumentGallery userId={userId} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">

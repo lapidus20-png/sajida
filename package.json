@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "create-admin": "node scripts/create-admin.mjs",
     "setup-storage": "node scripts/create-storage-buckets.mjs && node scripts/create-storage-policies.mjs",
+    "setup-documents": "node scripts/setup-client-documents.mjs",
     "fix-auth": "node scripts/fix-auth-simple.mjs",
     "disable-rls": "node scripts/disable-rls-with-service-key.mjs"
   },
