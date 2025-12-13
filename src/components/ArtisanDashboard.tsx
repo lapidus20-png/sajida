@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award } from 'lucide-react';
-import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance } from '../lib/supabase';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin } from 'lucide-react';
+import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance, User as UserType } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
 
 interface ArtisanDashboardProps {
@@ -11,13 +11,17 @@ interface ArtisanDashboardProps {
 
 export default function ArtisanDashboard({ artisanId, userId, onLogout }: ArtisanDashboardProps) {
   const [artisan, setArtisan] = useState<Artisan | null>(null);
+  const [userAccount, setUserAccount] = useState<UserType | null>(null);
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [myQuotes, setMyQuotes] = useState<Quote[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'profil'>('opportunites');
+  const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'profil' | 'compte'>('opportunites');
   const [showCreateQuote, setShowCreateQuote] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
+  const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     loadData();
@@ -34,6 +38,15 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       if (artisanResult.error) throw artisanResult.error;
       setArtisan(artisanResult.data);
+
+      const userResult = await supabase
+        .from('users')
+        .select('id, user_type, email, telephone, adresse, ville, created_at')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (userResult.error) throw userResult.error;
+      setUserAccount(userResult.data);
       setLoading(false);
 
       const [jobsResult, quotesResult, reviewsResult] = await Promise.all([
@@ -86,6 +99,50 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setArtisan({ ...artisan!, ...updates });
     } catch (error) {
       console.error('Erreur:', error);
+    }
+  };
+
+  const handleUpdateAccount = async (updates: Partial<UserType>) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', userId);
+
+      if (error) throw error;
+      setUserAccount({ ...userAccount!, ...updates });
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) throw error;
+
+      setPasswordSuccess('Mot de passe modifié avec succès');
+      setPasswordData({ newPassword: '', confirmPassword: '' });
+
+      setTimeout(() => setPasswordSuccess(''), 3000);
+    } catch (error: any) {
+      setPasswordError(error.message || 'Erreur lors du changement de mot de passe');
     }
   };
 
@@ -215,6 +272,17 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                 }`}
               >
                 Mon profil
+              </button>
+              <button
+                onClick={() => setActiveTab('compte')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'compte'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <User className="w-4 h-4 inline mr-2" />
+                Mon compte
               </button>
             </div>
           </div>
@@ -468,6 +536,146 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                     artisan.statut_verification === 'rejete' ? '✗ Votre profil a été rejeté' :
                     '⏳ Votre profil est en attente de vérification'}
                   </p>
+                </div>
+              </div>
+            ) : activeTab === 'compte' && userAccount ? (
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-600" />
+                    <p className="text-sm text-blue-800">
+                      <strong>Compte créé le:</strong> {new Date(userAccount.created_at).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    Informations personnelles
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                      <input
+                        type="text"
+                        value={artisan?.nom || ''}
+                        onChange={(e) => handleUpdateProfile({ nom: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                      <input
+                        type="text"
+                        value={artisan?.prenom || ''}
+                        onChange={(e) => handleUpdateProfile({ prenom: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={userAccount.email}
+                        readOnly
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Téléphone
+                      </label>
+                      <input
+                        type="tel"
+                        value={userAccount.telephone || ''}
+                        onChange={(e) => handleUpdateAccount({ telephone: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Adresse
+                      </label>
+                      <input
+                        type="text"
+                        value={userAccount.adresse || ''}
+                        onChange={(e) => handleUpdateAccount({ adresse: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
+                      <input
+                        type="text"
+                        value={userAccount.ville || ''}
+                        onChange={(e) => handleUpdateAccount({ ville: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Lock className="w-5 h-5" />
+                    Changer le mot de passe
+                  </h3>
+                  <div className="max-w-md space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
+                      <input
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        placeholder="Minimum 6 caractères"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirmer le mot de passe</label>
+                      <input
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        placeholder="Retapez le nouveau mot de passe"
+                      />
+                    </div>
+                    {passwordError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-800">{passwordError}</p>
+                      </div>
+                    )}
+                    {passwordSuccess && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-green-800">{passwordSuccess}</p>
+                      </div>
+                    )}
+                    <button
+                      onClick={handlePasswordChange}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+                    >
+                      Mettre à jour le mot de passe
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Type de compte</h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-700">
+                      <strong>Type:</strong> <span className="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium ml-2">{userAccount.user_type}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : null}
