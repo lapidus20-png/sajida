@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin } from 'lucide-react';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck } from 'lucide-react';
 import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance, User as UserType } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
+import { storageService, STORAGE_LIMITS } from '../lib/storageService';
 
 interface ArtisanDashboardProps {
   artisanId: string;
@@ -22,6 +23,9 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedDocuments, setUploadedDocuments] = useState<Array<{ name: string; url: string; path: string }>>([]);
 
   useEffect(() => {
     loadData();
@@ -143,6 +147,105 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setTimeout(() => setPasswordSuccess(''), 3000);
     } catch (error: any) {
       setPasswordError(error.message || 'Erreur lors du changement de mot de passe');
+    }
+  };
+
+  const handlePortfolioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!storageService.validateFileSize(file, STORAGE_LIMITS.portfolios.maxSize)) {
+      setUploadStatus({ type: 'error', message: `La taille du fichier ne doit pas dépasser ${STORAGE_LIMITS.portfolios.maxSize}MB` });
+      return;
+    }
+
+    if (!storageService.validateFileType(file, STORAGE_LIMITS.portfolios.allowedTypes)) {
+      setUploadStatus({ type: 'error', message: 'Type de fichier non autorisé. Utilisez JPG, PNG ou WebP' });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadStatus(null);
+
+    try {
+      const result = await storageService.uploadPortfolioImage(userId, file);
+
+      if (result.success && result.url) {
+        const updatedPortfolio = [...(artisan?.portefeuille || []), result.url];
+        await handleUpdateProfile({ portefeuille: updatedPortfolio });
+        setUploadStatus({ type: 'success', message: 'Photo ajoutée au portfolio' });
+        setTimeout(() => setUploadStatus(null), 3000);
+      } else {
+        setUploadStatus({ type: 'error', message: result.error || 'Erreur lors de l\'upload' });
+      }
+    } catch (error) {
+      setUploadStatus({ type: 'error', message: 'Erreur lors de l\'upload' });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handlePortfolioDelete = async (url: string, index: number) => {
+    if (!confirm('Voulez-vous vraiment supprimer cette photo?')) return;
+
+    try {
+      const updatedPortfolio = artisan?.portefeuille?.filter((_, idx) => idx !== index) || [];
+      await handleUpdateProfile({ portefeuille: updatedPortfolio });
+      setUploadStatus({ type: 'success', message: 'Photo supprimée' });
+      setTimeout(() => setUploadStatus(null), 3000);
+    } catch (error) {
+      setUploadStatus({ type: 'error', message: 'Erreur lors de la suppression' });
+    }
+  };
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!storageService.validateFileSize(file, STORAGE_LIMITS.documents.maxSize)) {
+      setUploadStatus({ type: 'error', message: `La taille du fichier ne doit pas dépasser ${STORAGE_LIMITS.documents.maxSize}MB` });
+      return;
+    }
+
+    if (!storageService.validateFileType(file, STORAGE_LIMITS.documents.allowedTypes)) {
+      setUploadStatus({ type: 'error', message: 'Type de fichier non autorisé. Utilisez PDF, JPG ou PNG' });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadStatus(null);
+
+    try {
+      const result = await storageService.uploadDocument(userId, file);
+
+      if (result.success && result.url && result.path) {
+        const newDoc = { name: file.name, url: result.url, path: result.path };
+        setUploadedDocuments([...uploadedDocuments, newDoc]);
+        setUploadStatus({ type: 'success', message: 'Document téléchargé avec succès' });
+        setTimeout(() => setUploadStatus(null), 3000);
+      } else {
+        setUploadStatus({ type: 'error', message: result.error || 'Erreur lors de l\'upload' });
+      }
+    } catch (error) {
+      setUploadStatus({ type: 'error', message: 'Erreur lors de l\'upload' });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDocumentDelete = async (doc: { name: string; url: string; path: string }, index: number) => {
+    if (!confirm(`Voulez-vous vraiment supprimer ${doc.name}?`)) return;
+
+    try {
+      await storageService.deleteFile('documents', doc.path);
+      const updatedDocs = uploadedDocuments.filter((_, idx) => idx !== index);
+      setUploadedDocuments(updatedDocs);
+      setUploadStatus({ type: 'success', message: 'Document supprimé' });
+      setTimeout(() => setUploadStatus(null), 3000);
+    } catch (error) {
+      setUploadStatus({ type: 'error', message: 'Erreur lors de la suppression' });
     }
   };
 
@@ -459,25 +562,125 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Image className="w-5 h-5" />
-                    Portfolio
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Image className="w-5 h-5" />
+                      Portfolio ({artisan.portefeuille?.length || 0} photos)
+                    </h3>
+                    <label className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      Ajouter une photo
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePortfolioUpload}
+                        className="hidden"
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
+                  {uploadStatus && (
+                    <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                      uploadStatus.type === 'success'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-red-50 border border-red-200'
+                    }`}>
+                      {uploadStatus.type === 'success' ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                      )}
+                      <p className={`text-sm ${
+                        uploadStatus.type === 'success' ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        {uploadStatus.message}
+                      </p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {artisan.portefeuille && artisan.portefeuille.length > 0 ? (
                       artisan.portefeuille.map((url, idx) => (
-                        <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
+                        <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow group">
                           <img
                             src={url}
                             alt={`Portfolio ${idx + 1}`}
                             className="w-full h-full object-cover"
                           />
+                          <button
+                            onClick={() => handlePortfolioDelete(url, idx)}
+                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       ))
                     ) : (
                       <div className="col-span-2 md:col-span-4 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                         <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                         <p className="text-gray-500 text-sm">Aucune image dans le portfolio</p>
+                        <p className="text-gray-400 text-xs mt-1">Ajoutez des photos de vos réalisations</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <FileCheck className="w-5 h-5" />
+                      Documents & Certifications ({uploadedDocuments.length})
+                    </h3>
+                    <label className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      Ajouter un document
+                      <input
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/png"
+                        onChange={handleDocumentUpload}
+                        className="hidden"
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
+                  <div className="space-y-3">
+                    {uploadedDocuments.length > 0 ? (
+                      uploadedDocuments.map((doc, idx) => (
+                        <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                              <FileText className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{doc.name}</p>
+                              <p className="text-xs text-gray-500">Document uploadé</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-colors"
+                              title="Télécharger"
+                            >
+                              <Download className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={() => handleDocumentDelete(doc, idx)}
+                              className="bg-red-100 hover:bg-red-200 text-red-600 p-2 rounded-lg transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                        <FileCheck className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">Aucun document uploadé</p>
+                        <p className="text-gray-400 text-xs mt-1">Ajoutez vos certifications, assurances, etc.</p>
                       </div>
                     )}
                   </div>
