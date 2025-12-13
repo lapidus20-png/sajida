@@ -121,7 +121,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
 
         const { data: quotesData, error: quotesError } = await supabase
           .from('quotes')
-          .select('id, job_request_id, artisan_id, montant, description, delai, statut, created_at')
+          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at, updated_at')
           .in('job_request_id', jobIds)
           .order('created_at', { ascending: false })
           .limit(100);
@@ -357,35 +357,132 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                   <p>Aucun devis reçu pour le moment</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {quotes.map(quote => {
                     const job = jobRequests.find(j => j.id === quote.job_request_id);
                     return (
-                      <div key={quote.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-1">{job?.titre}</h3>
-                            <p className="text-gray-600 text-sm mb-3">{quote.description_travaux.substring(0, 100)}...</p>
-                            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                              <span>⏱️ {quote.delai_execution} jours</span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                quote.statut === 'accepte' ? 'bg-green-100 text-green-800' :
-                                quote.statut === 'refuse' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {quote.statut}
-                              </span>
+                      <div key={quote.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 border-b border-gray-200">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="font-bold text-gray-900 text-lg mb-1">{job?.titre}</h3>
+                              <p className="text-sm text-gray-600">Reçu le {new Date(quote.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                            </div>
+                            <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                              quote.statut === 'accepte' ? 'bg-green-100 text-green-800 border-2 border-green-300' :
+                              quote.statut === 'refuse' ? 'bg-red-100 text-red-800 border-2 border-red-300' :
+                              quote.statut === 'expire' ? 'bg-gray-100 text-gray-800 border-2 border-gray-300' :
+                              'bg-yellow-100 text-yellow-800 border-2 border-yellow-300'
+                            }`}>
+                              {quote.statut === 'en_attente' ? '⏳ En attente' :
+                               quote.statut === 'accepte' ? '✓ Accepté' :
+                               quote.statut === 'refuse' ? '✗ Refusé' :
+                               '⌛ Expiré'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-blue-600" />
+                                Détails du devis
+                              </h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Montant total:</span>
+                                  <span className="font-bold text-blue-600 text-lg">{quote.montant_total.toLocaleString()} FCFA</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Acompte:</span>
+                                  <span className="font-semibold text-gray-900">{quote.montant_acompte.toLocaleString()} FCFA</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Délai d'exécution:</span>
+                                  <span className="font-semibold text-gray-900">{quote.delai_execution} jours</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Valide jusqu'au:</span>
+                                  <span className="font-semibold text-gray-900">
+                                    {new Date(quote.validite_jusqu_au).toLocaleDateString('fr-FR')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3">Description des travaux</h4>
+                              <p className="text-sm text-gray-700 leading-relaxed">{quote.description_travaux}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-blue-600">
-                              {quote.montant_total.toLocaleString()}
-                            </p>
-                            <p className="text-xs text-gray-600">FCFA</p>
-                            <button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-                              Voir détails
-                            </button>
-                          </div>
+
+                          {quote.materiel_fourni && quote.materiel_fourni.length > 0 && (
+                            <div className="mb-6">
+                              <h4 className="font-semibold text-gray-900 mb-3">Matériel fourni</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {quote.materiel_fourni.map((item, idx) => (
+                                  <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                    ✓ {item}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {quote.conditions_paiement && (
+                            <div className="mb-6">
+                              <h4 className="font-semibold text-gray-900 mb-3">Conditions de paiement</h4>
+                              <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                {quote.conditions_paiement}
+                              </p>
+                            </div>
+                          )}
+
+                          {quote.statut === 'en_attente' && (
+                            <div className="flex gap-3 pt-4 border-t border-gray-200">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const { error } = await supabase
+                                      .from('quotes')
+                                      .update({ statut: 'accepte' })
+                                      .eq('id', quote.id);
+
+                                    if (error) throw error;
+                                    await loadData();
+                                  } catch (err) {
+                                    console.error('Erreur lors de l\'acceptation du devis:', err);
+                                  }
+                                }}
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                              >
+                                <CheckCircle className="w-5 h-5" />
+                                Accepter ce devis
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Êtes-vous sûr de vouloir refuser ce devis ?')) {
+                                    try {
+                                      const { error } = await supabase
+                                        .from('quotes')
+                                        .update({ statut: 'refuse' })
+                                        .eq('id', quote.id);
+
+                                      if (error) throw error;
+                                      await loadData();
+                                    } catch (err) {
+                                      console.error('Erreur lors du refus du devis:', err);
+                                    }
+                                  }
+                                }}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                              >
+                                <AlertCircle className="w-5 h-5" />
+                                Refuser ce devis
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
