@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation } from 'lucide-react';
-import { supabase, JobRequest, Quote, Artisan, calculateDistance } from '../lib/supabase';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award } from 'lucide-react';
+import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
 
 interface ArtisanDashboardProps {
@@ -13,6 +13,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [artisan, setArtisan] = useState<Artisan | null>(null);
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [myQuotes, setMyQuotes] = useState<Quote[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'profil'>('opportunites');
   const [showCreateQuote, setShowCreateQuote] = useState(false);
@@ -27,7 +28,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
     try {
       const artisanResult = await supabase
         .from('artisans')
-        .select('id, user_id, nom, prenom, metier, note_moyenne, statut_verification, annees_experience, telephone, ville, latitude, longitude')
+        .select('id, user_id, nom, prenom, metier, note_moyenne, statut_verification, annees_experience, telephone, ville, latitude, longitude, description, portefeuille, certifications, tarif_horaire, assurance_rcpro')
         .eq('id', artisanId)
         .maybeSingle();
 
@@ -35,10 +36,10 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setArtisan(artisanResult.data);
       setLoading(false);
 
-      const [jobsResult, quotesResult] = await Promise.all([
+      const [jobsResult, quotesResult, reviewsResult] = await Promise.all([
         supabase
           .from('job_requests')
-          .select('id, titre, description, ville, statut, budget_min, budget_max, created_at, latitude, longitude')
+          .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude')
           .eq('statut', 'publiee')
           .order('created_at', { ascending: false })
           .limit(20),
@@ -47,7 +48,13 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
           .select('id, job_request_id, artisan_id, montant, description, delai, statut, created_at')
           .eq('artisan_id', artisanId)
           .order('created_at', { ascending: false })
-          .limit(50)
+          .limit(50),
+        supabase
+          .from('reviews')
+          .select('id, reviewer_id, note, commentaire, verified, created_at')
+          .eq('reviewed_user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(20)
       ]);
 
       if (jobsResult.error) throw jobsResult.error;
@@ -55,6 +62,9 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       if (quotesResult.error) throw quotesResult.error;
       setMyQuotes(quotesResult.data || []);
+
+      if (reviewsResult.error) throw reviewsResult.error;
+      setReviews(reviewsResult.data || []);
     } catch (error) {
       console.error('Erreur:', error);
       setLoading(false);
@@ -351,16 +361,105 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                         <label className="text-gray-700">Assurance RC Pro active</label>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Description des services</label>
-                        <textarea
-                          value={artisan.description}
-                          onChange={(e) => handleUpdateProfile({ description: e.target.value })}
-                          rows={4}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Certifications</label>
+                        <div className="flex flex-wrap gap-2">
+                          {artisan.certifications && artisan.certifications.length > 0 ? (
+                            artisan.certifications.map((cert, idx) => (
+                              <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                                <Award className="w-3 h-3" />
+                                {cert}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-gray-500 text-sm">Aucune certification</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Description de l'entreprise</h3>
+                  <textarea
+                    value={artisan.description}
+                    onChange={(e) => handleUpdateProfile({ description: e.target.value })}
+                    rows={5}
+                    placeholder="Décrivez votre entreprise, vos services, et ce qui vous distingue..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Image className="w-5 h-5" />
+                    Portfolio
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {artisan.portefeuille && artisan.portefeuille.length > 0 ? (
+                      artisan.portefeuille.map((url, idx) => (
+                        <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
+                          <img
+                            src={url}
+                            alt={`Portfolio ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-2 md:col-span-4 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                        <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">Aucune image dans le portfolio</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-500" />
+                    Avis clients ({reviews.length})
+                  </h3>
+                  {reviews.length > 0 ? (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < review.note
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="font-medium text-gray-900">{review.note}/5</span>
+                              {review.verified && (
+                                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Vérifié
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              {new Date(review.created_at).toLocaleDateString('fr-FR')}
+                            </span>
+                          </div>
+                          <p className="text-gray-700">{review.commentaire}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                      <Star className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500">Aucun avis pour le moment</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
