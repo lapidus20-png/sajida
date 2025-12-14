@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck } from 'lucide-react';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck, Bookmark, Settings } from 'lucide-react';
 import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance, User as UserType } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
 import { storageService, STORAGE_LIMITS } from '../lib/storageService';
@@ -17,7 +17,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [myQuotes, setMyQuotes] = useState<Quote[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'profil' | 'compte'>('opportunites');
+  const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'saved-leads' | 'profil' | 'compte'>('opportunites');
+  const [savedJobs, setSavedJobs] = useState<string[]>([]);
   const [showCreateQuote, setShowCreateQuote] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
   const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
@@ -53,11 +54,12 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setUserAccount(userResult.data);
       setLoading(false);
 
-      const [jobsResult, quotesResult, reviewsResult] = await Promise.all([
+      const [jobsResult, quotesResult, reviewsResult, savedJobsResult] = await Promise.all([
         supabase
           .from('job_requests')
-          .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude')
+          .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
           .eq('statut', 'publiee')
+          .eq('categorie', artisanResult.data?.metier || '')
           .order('created_at', { ascending: false })
           .limit(20),
         supabase
@@ -71,7 +73,11 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
           .select('id, reviewer_id, note, commentaire, verified, created_at')
           .eq('reviewed_user_id', userId)
           .order('created_at', { ascending: false })
-          .limit(20)
+          .limit(20),
+        supabase
+          .from('saved_jobs')
+          .select('job_request_id')
+          .eq('artisan_id', artisanId)
       ]);
 
       if (jobsResult.error) throw jobsResult.error;
@@ -82,6 +88,10 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       if (reviewsResult.error) throw reviewsResult.error;
       setReviews(reviewsResult.data || []);
+
+      if (!savedJobsResult.error && savedJobsResult.data) {
+        setSavedJobs(savedJobsResult.data.map(sj => sj.job_request_id));
+      }
     } catch (error) {
       console.error('Erreur:', error);
       setLoading(false);
@@ -249,6 +259,37 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
     }
   };
 
+  const handleSaveJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase
+        .from('saved_jobs')
+        .insert({
+          artisan_id: artisanId,
+          job_request_id: jobId
+        });
+
+      if (error) throw error;
+      setSavedJobs([...savedJobs, jobId]);
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  const handleUnsaveJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase
+        .from('saved_jobs')
+        .delete()
+        .eq('artisan_id', artisanId)
+        .eq('job_request_id', jobId);
+
+      if (error) throw error;
+      setSavedJobs(savedJobs.filter(id => id !== jobId));
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
   const stats = {
     profil: artisan ? {
       note: artisan.note_moyenne,
@@ -367,6 +408,17 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                 Mes devis ({stats.quotes.total})
               </button>
               <button
+                onClick={() => setActiveTab('saved-leads')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'saved-leads'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Bookmark className="w-4 h-4 inline mr-2" />
+                Opportunités sauvegardées ({savedJobs.length})
+              </button>
+              <button
                 onClick={() => setActiveTab('profil')}
                 className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
                   activeTab === 'profil'
@@ -374,6 +426,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
+                <User className="w-4 h-4 inline mr-2" />
                 Mon profil
               </button>
               <button
@@ -384,8 +437,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <User className="w-4 h-4 inline mr-2" />
-                Mon compte
+                <Settings className="w-4 h-4 inline mr-2" />
+                Gérer mon compte
               </button>
             </div>
           </div>
@@ -399,15 +452,21 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
               jobRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Aucune opportunité disponible</p>
+                  <p className="text-gray-600">Aucune opportunité disponible dans votre domaine ({artisan?.metier})</p>
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Filtré par métier:</strong> Vous voyez uniquement les opportunités pour {artisan?.metier}
+                    </p>
+                  </div>
                   {jobRequests.map(job => {
                     const distance =
                       artisan?.latitude && artisan?.longitude && job.latitude && job.longitude
                         ? calculateDistance(artisan.latitude, artisan.longitude, job.latitude, job.longitude)
                         : null;
+                    const isSaved = savedJobs.includes(job.id);
 
                     return (
                       <div
@@ -432,15 +491,91 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                               <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                             </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              setSelectedJob(job);
-                              setShowCreateQuote(true);
-                            }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap"
-                          >
-                            Répondre
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => isSaved ? handleUnsaveJob(job.id) : handleSaveJob(job.id)}
+                              className={`${
+                                isSaved
+                                  ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              } px-3 py-2 rounded-lg transition-colors`}
+                              title={isSaved ? 'Retirer des favoris' : 'Sauvegarder'}
+                            >
+                              <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedJob(job);
+                                setShowCreateQuote(true);
+                              }}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap"
+                            >
+                              Répondre
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : activeTab === 'saved-leads' ? (
+              savedJobs.length === 0 ? (
+                <div className="text-center py-12">
+                  <Bookmark className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Aucune opportunité sauvegardée</p>
+                  <p className="text-sm text-gray-500 mt-2">Sauvegardez des opportunités pour les consulter plus tard</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {jobRequests.filter(job => savedJobs.includes(job.id)).map(job => {
+                    const distance =
+                      artisan?.latitude && artisan?.longitude && job.latitude && job.longitude
+                        ? calculateDistance(artisan.latitude, artisan.longitude, job.latitude, job.longitude)
+                        : null;
+
+                    return (
+                      <div
+                        key={job.id}
+                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow hover:border-yellow-300 bg-yellow-50"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Bookmark className="w-4 h-4 text-yellow-600 fill-current" />
+                              <h3 className="font-semibold text-gray-900">{job.titre}</h3>
+                              {distance !== null && (
+                                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                                  <Navigation className="w-3 h-3" />
+                                  {distance} km
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
+                            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+                              <span>📍 {job.localisation}</span>
+                              <span>💰 {job.budget_min.toLocaleString()} - {job.budget_max.toLocaleString()} FCFA</span>
+                              <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleUnsaveJob(job.id)}
+                              className="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors"
+                              title="Retirer"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedJob(job);
+                                setShowCreateQuote(true);
+                              }}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap"
+                            >
+                              Répondre
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
