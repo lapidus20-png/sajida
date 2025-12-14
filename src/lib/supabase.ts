@@ -66,7 +66,7 @@ export interface Artisan {
   ville: string;
   quartier: string;
   adresse: string;
-  metier: string;
+  metier: string[];
   description: string;
   photo_url: string;
   annees_experience: number;

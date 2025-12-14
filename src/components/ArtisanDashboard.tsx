@@ -23,6 +23,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedProfile, setEditedProfile] = useState<Partial<Artisan>>({});
+  const [newMetier, setNewMetier] = useState('');
   const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
@@ -301,19 +302,50 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       nom: artisan?.nom,
       prenom: artisan?.prenom,
       telephone: artisan?.telephone,
-      ville: artisan?.ville
+      ville: artisan?.ville,
+      metier: artisan?.metier || []
     });
     setIsEditingProfile(true);
   };
 
   const handleCancelEditProfile = () => {
     setEditedProfile({});
+    setNewMetier('');
     setIsEditingProfile(false);
     setUploadStatus(null);
   };
 
+  const handleAddMetier = () => {
+    if (newMetier.trim() && editedProfile.metier) {
+      if (!editedProfile.metier.includes(newMetier.trim())) {
+        setEditedProfile({
+          ...editedProfile,
+          metier: [...editedProfile.metier, newMetier.trim()]
+        });
+        setNewMetier('');
+      } else {
+        setUploadStatus({ type: 'error', message: 'Ce métier est déjà dans la liste' });
+        setTimeout(() => setUploadStatus(null), 3000);
+      }
+    }
+  };
+
+  const handleRemoveMetier = (metierToRemove: string) => {
+    if (editedProfile.metier) {
+      setEditedProfile({
+        ...editedProfile,
+        metier: editedProfile.metier.filter(m => m !== metierToRemove)
+      });
+    }
+  };
+
   const handleSaveProfile = async () => {
     try {
+      if (editedProfile.metier && editedProfile.metier.length === 0) {
+        setUploadStatus({ type: 'error', message: 'Vous devez avoir au moins un métier' });
+        return;
+      }
+
       const { error } = await supabase
         .from('artisans')
         .update(editedProfile)
@@ -323,6 +355,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       setArtisan({ ...artisan!, ...editedProfile });
       setIsEditingProfile(false);
+      setNewMetier('');
       setUploadStatus({ type: 'success', message: 'Profil mis à jour avec succès' });
       setTimeout(() => setUploadStatus(null), 3000);
     } catch (error) {
@@ -746,9 +779,60 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                         )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Métier</label>
-                        <p className="text-gray-900 font-medium px-4 py-2 bg-gray-100 rounded-lg">{artisan.metier}</p>
-                        <p className="text-xs text-gray-500 mt-1">Le métier ne peut pas être modifié</p>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Métiers / Spécialités
+                        </label>
+                        {isEditingProfile ? (
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={newMetier}
+                                onChange={(e) => setNewMetier(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleAddMetier()}
+                                placeholder="Ex: Plombier, Électricien..."
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddMetier}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors"
+                              >
+                                Ajouter
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {editedProfile.metier && editedProfile.metier.length > 0 ? (
+                                editedProfile.metier.map((m, idx) => (
+                                  <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                                    {m}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveMetier(m)}
+                                      className="hover:text-emerald-900"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))
+                              ) : (
+                                <p className="text-gray-500 text-sm">Aucun métier ajouté</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {artisan.metier && artisan.metier.length > 0 ? (
+                              artisan.metier.map((m, idx) => (
+                                <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg text-sm font-medium">
+                                  {m}
+                                </span>
+                              ))
+                            ) : (
+                              <p className="text-gray-500 text-sm px-4 py-2">Aucun métier spécifié</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Années d'expérience</label>

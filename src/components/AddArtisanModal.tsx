@@ -141,11 +141,12 @@ export default function AddArtisanModal({ onClose, onSuccess }: AddArtisanModalP
     telephone: '',
     ville: '',
     quartier: '',
-    metier: '',
+    metier: [] as string[],
     description: '',
     annees_experience: '',
     tarif_horaire: ''
   });
+  const [selectedMetier, setSelectedMetier] = useState('');
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -162,6 +163,12 @@ export default function AddArtisanModal({ onClose, onSuccess }: AddArtisanModalP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.metier.length === 0) {
+      alert('Veuillez ajouter au moins un métier');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -271,19 +278,52 @@ export default function AddArtisanModal({ onClose, onSuccess }: AddArtisanModalP
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Briefcase className="w-4 h-4 inline mr-1" />
-                Métier *
+                Métiers / Spécialités *
               </label>
-              <select
-                required
-                value={formData.metier}
-                onChange={(e) => setFormData({ ...formData, metier: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              >
-                <option value="">Sélectionnez un métier</option>
-                {METIERS.map(metier => (
-                  <option key={metier} value={metier}>{metier}</option>
-                ))}
-              </select>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <select
+                    value={selectedMetier}
+                    onChange={(e) => setSelectedMetier(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  >
+                    <option value="">Sélectionnez un métier</option>
+                    {METIERS.map(metier => (
+                      <option key={metier} value={metier}>{metier}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedMetier && !formData.metier.includes(selectedMetier)) {
+                        setFormData({ ...formData, metier: [...formData.metier, selectedMetier] });
+                        setSelectedMetier('');
+                      }
+                    }}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border border-gray-200 rounded-lg bg-gray-50">
+                  {formData.metier.length > 0 ? (
+                    formData.metier.map((m, idx) => (
+                      <span key={idx} className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                        {m}
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, metier: formData.metier.filter(mt => mt !== m) })}
+                          className="hover:text-amber-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 text-sm">Aucun métier ajouté (requis)</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

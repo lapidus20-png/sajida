@@ -75,10 +75,14 @@ export default function MapView({ artisans, userLat, userLng, onArtisanClick }: 
 
         artisans.forEach((artisan) => {
           if (artisan.latitude && artisan.longitude) {
+            const metierDisplay = artisan.metier && artisan.metier.length > 0
+              ? artisan.metier.join(', ')
+              : 'Métier non spécifié';
+
             const marker = new google.maps.Marker({
               position: { lat: artisan.latitude, lng: artisan.longitude },
               map,
-              title: `${artisan.prenom} ${artisan.nom} - ${artisan.metier}`,
+              title: `${artisan.prenom} ${artisan.nom} - ${metierDisplay}`,
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
                 fillColor: '#F59E0B',
@@ -96,7 +100,7 @@ export default function MapView({ artisans, userLat, userLng, onArtisanClick }: 
                     ${artisan.prenom} ${artisan.nom}
                   </h3>
                   <p style="margin: 0; color: #F59E0B; font-weight: 600; font-size: 14px;">
-                    ${artisan.metier}
+                    ${metierDisplay}
                   </p>
                 </div>
               `,

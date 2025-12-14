@@ -43,7 +43,17 @@ export default function ArtisanCard({ artisan, onContact, userLat, userLng }: Ar
           {artisan.prenom} {artisan.nom}
         </h3>
 
-        <p className="text-amber-600 font-semibold mb-2">{artisan.metier}</p>
+        <div className="flex flex-wrap gap-1 mb-2">
+          {artisan.metier && artisan.metier.length > 0 ? (
+            artisan.metier.map((m, idx) => (
+              <span key={idx} className="text-amber-600 font-semibold">
+                {m}{idx < artisan.metier.length - 1 && ', '}
+              </span>
+            ))
+          ) : (
+            <span className="text-gray-500 text-sm">Métier non spécifié</span>
+          )}
+        </div>
 
         <div className="flex items-center gap-1 mb-3">
           <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />

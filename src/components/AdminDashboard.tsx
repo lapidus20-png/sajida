@@ -410,7 +410,11 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 <div className="flex items-start justify-between gap-4 mb-3">
                                   <div>
                                     <h4 className="text-white font-bold text-lg">{artisan.nom} {artisan.prenom}</h4>
-                                    <p className="text-yellow-400 font-medium">{artisan.metier}</p>
+                                    <p className="text-yellow-400 font-medium">
+                                      {artisan.metier && artisan.metier.length > 0
+                                        ? artisan.metier.join(', ')
+                                        : 'Métier non spécifié'}
+                                    </p>
                                   </div>
                                   <span className="bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
                                     EN ATTENTE
