@@ -77,6 +77,10 @@ export interface Artisan {
   portefeuille: string[];
   certifications: string[];
   assurance_rcpro: boolean;
+  date_naissance?: string;
+  genre?: 'homme' | 'femme' | 'autre' | '';
+  photo_id_url?: string;
+  photo_id_verified?: boolean;
   latitude?: number;
   longitude?: number;
   created_at: string;

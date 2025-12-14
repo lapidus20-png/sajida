@@ -423,16 +423,27 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                     <p className="text-white text-sm">{artisan.telephone}</p>
                                   </div>
                                   <div>
+                                    <p className="text-slate-400 text-sm mb-2">Informations personnelles</p>
+                                    {artisan.date_naissance && (
+                                      <p className="text-white text-sm">
+                                        Âge: {new Date().getFullYear() - new Date(artisan.date_naissance).getFullYear()} ans
+                                      </p>
+                                    )}
+                                    {artisan.genre && (
+                                      <p className="text-white text-sm capitalize">{artisan.genre}</p>
+                                    )}
+                                  </div>
+                                  <div>
                                     <p className="text-slate-400 text-sm mb-2">Localisation</p>
                                     <p className="text-white text-sm">{artisan.ville}</p>
                                     <p className="text-white text-sm">{artisan.quartier}</p>
+                                    {artisan.adresse && (
+                                      <p className="text-white text-sm text-xs mt-1">{artisan.adresse}</p>
+                                    )}
                                   </div>
                                   <div>
-                                    <p className="text-slate-400 text-sm mb-2">Expérience</p>
-                                    <p className="text-white text-sm font-semibold">{artisan.annees_experience} ans</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-slate-400 text-sm mb-2">Tarif horaire</p>
+                                    <p className="text-slate-400 text-sm mb-2">Expérience & Tarif</p>
+                                    <p className="text-white text-sm font-semibold">{artisan.annees_experience} ans d'expérience</p>
                                     <p className="text-white text-sm font-semibold">{artisan.tarif_horaire.toLocaleString()} FCFA/h</p>
                                   </div>
                                 </div>
@@ -450,6 +461,49 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                         <span key={idx} className="bg-blue-900 text-blue-200 px-3 py-1 rounded-full text-xs">
                                           {cert}
                                         </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {artisan.assurance_rcpro && (
+                                  <div className="mb-4">
+                                    <div className="flex items-center gap-2 bg-green-900 text-green-200 px-3 py-2 rounded-lg inline-block">
+                                      <CheckCircle className="w-4 h-4" />
+                                      <span className="text-sm font-medium">Assurance RC Pro</span>
+                                    </div>
+                                  </div>
+                                )}
+                                {artisan.photo_id_url && (
+                                  <div className="mb-4">
+                                    <p className="text-slate-400 text-sm mb-2">Pièce d'identité</p>
+                                    <div className="relative inline-block">
+                                      <img
+                                        src={artisan.photo_id_url}
+                                        alt="Pièce d'identité"
+                                        className="max-w-xs rounded-lg border-2 border-slate-600 hover:border-yellow-500 transition-all cursor-pointer"
+                                        onClick={() => window.open(artisan.photo_id_url, '_blank')}
+                                      />
+                                      {artisan.photo_id_verified && (
+                                        <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                          <CheckCircle className="w-3 h-3" />
+                                          Vérifié
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                {artisan.portefeuille && artisan.portefeuille.length > 0 && (
+                                  <div className="mb-4">
+                                    <p className="text-slate-400 text-sm mb-2">Portfolio ({artisan.portefeuille.length} photos)</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                      {artisan.portefeuille.map((photo, idx) => (
+                                        <img
+                                          key={idx}
+                                          src={photo}
+                                          alt={`Portfolio ${idx + 1}`}
+                                          className="w-full h-32 object-cover rounded-lg border border-slate-600 hover:border-blue-500 transition-all cursor-pointer"
+                                          onClick={() => window.open(photo, '_blank')}
+                                        />
                                       ))}
                                     </div>
                                   </div>
