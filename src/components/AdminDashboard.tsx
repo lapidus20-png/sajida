@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Users, AlertCircle, TrendingUp, CheckCircle, Clock, Activity } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { BarChart3, Users, AlertCircle, TrendingUp, CheckCircle, Clock, Activity, UserCheck, X } from 'lucide-react';
+import { supabase, Artisan } from '../lib/supabase';
 import PaymentTestPanel from './PaymentTestPanel';
 
 interface AdminStats {
@@ -26,6 +26,12 @@ interface AdminStats {
     verified: number;
     pending: number;
   };
+  artisans: {
+    total: number;
+    pending: number;
+    verified: number;
+    rejected: number;
+  };
 }
 
 interface AdminDashboardProps {
@@ -35,7 +41,8 @@ interface AdminDashboardProps {
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'jobs' | 'reports' | 'payments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'jobs' | 'reports' | 'payments' | 'artisans'>('overview');
+  const [pendingArtisans, setPendingArtisans] = useState<Artisan[]>([]);
 
   useEffect(() => {
     loadAdminStats();
@@ -57,6 +64,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         quotesEnAttente,
         reviewsTotal,
         reviewsVerified,
+        artisansTotal,
+        artisansPending,
+        artisansVerified,
+        artisansRejected,
       ] = await Promise.all([
         supabase.from('users').select('*', { count: 'exact', head: true }),
         supabase.from('users').select('*', { count: 'exact', head: true }).eq('user_type', 'client'),
@@ -71,6 +82,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
         supabase.from('reviews').select('*', { count: 'exact', head: true }),
         supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('verified', true),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'en_attente'),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'verifie'),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'rejete'),
       ]);
 
       setStats({
@@ -96,7 +111,21 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
           verified: reviewsVerified.count || 0,
           pending: (reviewsTotal.count || 0) - (reviewsVerified.count || 0),
         },
+        artisans: {
+          total: artisansTotal.count || 0,
+          pending: artisansPending.count || 0,
+          verified: artisansVerified.count || 0,
+          rejected: artisansRejected.count || 0,
+        },
       });
+
+      const { data: artisansData } = await supabase
+        .from('artisans')
+        .select('*')
+        .eq('statut_verification', 'en_attente')
+        .order('created_at', { ascending: false });
+
+      setPendingArtisans(artisansData || []);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -138,7 +167,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-lg text-white">
                 <div className="flex items-center justify-between">
                   <div>
@@ -149,6 +178,19 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 </div>
                 <p className="text-xs text-blue-100 mt-4">
                   {stats.users.clients} clients • {stats.users.artisans} artisans
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-lg shadow-lg text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-yellow-100 text-sm font-medium">Artisans à vérifier</p>
+                    <p className="text-4xl font-bold mt-2">{stats.artisans.pending}</p>
+                  </div>
+                  <UserCheck className="w-12 h-12 opacity-30" />
+                </div>
+                <p className="text-xs text-yellow-100 mt-4">
+                  {stats.artisans.verified} vérifiés • {stats.artisans.rejected} rejetés
                 </p>
               </div>
 
@@ -204,6 +246,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     }`}
                   >
                     Aperçu
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('artisans')}
+                    className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                      activeTab === 'artisans'
+                        ? 'border-yellow-500 text-yellow-400'
+                        : 'border-transparent text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    <UserCheck className="w-4 h-4 inline mr-2" />
+                    Vérification Artisans ({stats.artisans.pending})
                   </button>
                   <button
                     onClick={() => setActiveTab('users')}
@@ -327,6 +380,130 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'artisans' && (
+                  <div className="text-slate-300">
+                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                      <UserCheck className="w-6 h-6 text-yellow-400" />
+                      Artisans en attente de vérification
+                    </h3>
+                    {pendingArtisans.length === 0 ? (
+                      <div className="bg-slate-700 p-4 rounded-lg text-center py-12 text-slate-400">
+                        <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
+                        <p>Aucun artisan en attente de vérification</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {pendingArtisans.map(artisan => (
+                          <div key={artisan.id} className="bg-slate-700 rounded-lg p-6 border border-slate-600 hover:border-yellow-500 transition-all">
+                            <div className="flex items-start gap-6">
+                              {artisan.photo_url ? (
+                                <img src={artisan.photo_url} alt={artisan.nom} className="w-24 h-24 rounded-lg object-cover" />
+                              ) : (
+                                <div className="w-24 h-24 rounded-lg bg-slate-600 flex items-center justify-center">
+                                  <Users className="w-12 h-12 text-slate-400" />
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between gap-4 mb-3">
+                                  <div>
+                                    <h4 className="text-white font-bold text-lg">{artisan.nom} {artisan.prenom}</h4>
+                                    <p className="text-yellow-400 font-medium">{artisan.metier}</p>
+                                  </div>
+                                  <span className="bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
+                                    EN ATTENTE
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                  <div>
+                                    <p className="text-slate-400 text-sm mb-2">Contact</p>
+                                    <p className="text-white text-sm">{artisan.email}</p>
+                                    <p className="text-white text-sm">{artisan.telephone}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-400 text-sm mb-2">Localisation</p>
+                                    <p className="text-white text-sm">{artisan.ville}</p>
+                                    <p className="text-white text-sm">{artisan.quartier}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-400 text-sm mb-2">Expérience</p>
+                                    <p className="text-white text-sm font-semibold">{artisan.annees_experience} ans</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-400 text-sm mb-2">Tarif horaire</p>
+                                    <p className="text-white text-sm font-semibold">{artisan.tarif_horaire.toLocaleString()} FCFA/h</p>
+                                  </div>
+                                </div>
+                                {artisan.description && (
+                                  <div className="mb-4">
+                                    <p className="text-slate-400 text-sm mb-1">Description</p>
+                                    <p className="text-white text-sm">{artisan.description}</p>
+                                  </div>
+                                )}
+                                {artisan.certifications && artisan.certifications.length > 0 && (
+                                  <div className="mb-4">
+                                    <p className="text-slate-400 text-sm mb-2">Certifications</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {artisan.certifications.map((cert, idx) => (
+                                        <span key={idx} className="bg-blue-900 text-blue-200 px-3 py-1 rounded-full text-xs">
+                                          {cert}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="flex gap-3 mt-4">
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        const { error } = await supabase
+                                          .from('artisans')
+                                          .update({ statut_verification: 'verifie' })
+                                          .eq('id', artisan.id);
+
+                                        if (error) throw error;
+                                        await loadAdminStats();
+                                      } catch (err) {
+                                        console.error('Erreur lors de la vérification:', err);
+                                        alert('Erreur lors de la vérification de l\'artisan');
+                                      }
+                                    }}
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <CheckCircle className="w-5 h-5" />
+                                    Approuver
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm('Êtes-vous sûr de vouloir rejeter cet artisan ?')) {
+                                        try {
+                                          const { error } = await supabase
+                                            .from('artisans')
+                                            .update({ statut_verification: 'rejete' })
+                                            .eq('id', artisan.id);
+
+                                          if (error) throw error;
+                                          await loadAdminStats();
+                                        } catch (err) {
+                                          console.error('Erreur lors du rejet:', err);
+                                          alert('Erreur lors du rejet de l\'artisan');
+                                        }
+                                      }
+                                    }}
+                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <X className="w-5 h-5" />
+                                    Rejeter
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
