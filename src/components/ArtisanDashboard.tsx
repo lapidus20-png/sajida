@@ -57,14 +57,25 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setUserAccount(userResult.data);
       setLoading(false);
 
+      const artisanMetiers = artisanResult.data?.metier
+        ? (Array.isArray(artisanResult.data.metier)
+            ? artisanResult.data.metier
+            : [artisanResult.data.metier])
+        : [];
+
+      const jobsQuery = supabase
+        .from('job_requests')
+        .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
+        .eq('statut', 'publiee')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (artisanMetiers.length > 0) {
+        jobsQuery.in('categorie', artisanMetiers);
+      }
+
       const [jobsResult, quotesResult, reviewsResult, savedJobsResult] = await Promise.all([
-        supabase
-          .from('job_requests')
-          .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
-          .eq('statut', 'publiee')
-          .eq('categorie', artisanResult.data?.metier || '')
-          .order('created_at', { ascending: false })
-          .limit(20),
+        jobsQuery,
         supabase
           .from('quotes')
           .select('id, job_request_id, artisan_id, montant, description, delai, statut, created_at')
