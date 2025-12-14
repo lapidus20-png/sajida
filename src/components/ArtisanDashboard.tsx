@@ -3,6 +3,7 @@ import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navi
 import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance, User as UserType } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
 import { storageService, STORAGE_LIMITS } from '../lib/storageService';
+import { getJobCategoriesForMetiers } from '../lib/categoryMapping';
 
 interface ArtisanDashboardProps {
   artisanId: string;
@@ -10,10 +11,28 @@ interface ArtisanDashboardProps {
   onLogout: () => void;
 }
 
+const parseMetier = (metier: any): string[] => {
+  if (!metier) return [];
+  if (Array.isArray(metier)) return metier;
+  if (typeof metier === 'string') {
+    if (metier.startsWith('[') || metier.startsWith('"')) {
+      try {
+        const parsed = JSON.parse(metier);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch (e) {
+        return [metier];
+      }
+    }
+    return [metier];
+  }
+  return [];
+};
+
 export default function ArtisanDashboard({ artisanId, userId, onLogout }: ArtisanDashboardProps) {
   const [artisan, setArtisan] = useState<Artisan | null>(null);
   const [userAccount, setUserAccount] = useState<UserType | null>(null);
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
   const [myQuotes, setMyQuotes] = useState<Quote[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,11 +76,9 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setUserAccount(userResult.data);
       setLoading(false);
 
-      const artisanMetiers = artisanResult.data?.metier
-        ? (Array.isArray(artisanResult.data.metier)
-            ? artisanResult.data.metier
-            : [artisanResult.data.metier])
-        : [];
+      const artisanMetiers = parseMetier(artisanResult.data?.metier);
+      const jobCategories = getJobCategoriesForMetiers(artisanMetiers);
+      setFilteredCategories(jobCategories);
 
       const jobsQuery = supabase
         .from('job_requests')
@@ -70,8 +87,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (artisanMetiers.length > 0) {
-        jobsQuery.in('categorie', artisanMetiers);
+      if (jobCategories.length > 0) {
+        jobsQuery.in('categorie', jobCategories);
       }
 
       const [jobsResult, quotesResult, reviewsResult, savedJobsResult] = await Promise.all([
@@ -305,9 +322,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   };
 
   const handleStartEditProfile = () => {
-    const metierArray = artisan?.metier
-      ? (Array.isArray(artisan.metier) ? artisan.metier : [artisan.metier])
-      : [];
+    const metierArray = parseMetier(artisan?.metier);
 
     setEditedProfile({
       annees_experience: artisan?.annees_experience,
@@ -541,14 +556,22 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
               jobRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Aucune opportunité disponible dans votre domaine ({artisan?.metier})</p>
+                  <p className="text-gray-600">Aucune opportunité disponible pour les catégories: {filteredCategories.join(', ') || 'Aucune'}</p>
+                  {artisan?.metier && (
+                    <p className="text-sm text-gray-500 mt-2">Votre métier: {parseMetier(artisan.metier).join(', ')}</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                     <p className="text-sm text-blue-800">
-                      <strong>Filtré par métier:</strong> Vous voyez uniquement les opportunités pour {artisan?.metier}
+                      <strong>Filtré par catégories:</strong> {filteredCategories.join(', ')}
                     </p>
+                    {artisan?.metier && (
+                      <p className="text-xs text-blue-700 mt-1">
+                        Basé sur votre métier: {parseMetier(artisan.metier).join(', ')}
+                      </p>
+                    )}
                   </div>
                   {jobRequests.map(job => {
                     const distance =
@@ -818,7 +841,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {(() => {
-                                const metiers = editedProfile.metier ? (Array.isArray(editedProfile.metier) ? editedProfile.metier : [editedProfile.metier]) : [];
+                                const metiers = editedProfile.metier || [];
                                 return metiers.length > 0 ? (
                                   metiers.map((m, idx) => (
                                     <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
@@ -841,7 +864,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                         ) : (
                           <div className="flex flex-wrap gap-2">
                             {(() => {
-                              const metiers = artisan.metier ? (Array.isArray(artisan.metier) ? artisan.metier : [artisan.metier]) : [];
+                              const metiers = parseMetier(artisan.metier);
                               return metiers.length > 0 && metiers[0] ? (
                                 metiers.map((m, idx) => (
                                   <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg text-sm font-medium">
