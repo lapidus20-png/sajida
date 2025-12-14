@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck, Bookmark, Settings } from 'lucide-react';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck, Bookmark, Settings, Edit, X, Save } from 'lucide-react';
 import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance, User as UserType } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
 import { storageService, STORAGE_LIMITS } from '../lib/storageService';
@@ -21,6 +21,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
   const [showCreateQuote, setShowCreateQuote] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<Partial<Artisan>>({});
   const [passwordData, setPasswordData] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
@@ -287,6 +289,45 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setSavedJobs(savedJobs.filter(id => id !== jobId));
     } catch (error) {
       console.error('Erreur:', error);
+    }
+  };
+
+  const handleStartEditProfile = () => {
+    setEditedProfile({
+      annees_experience: artisan?.annees_experience,
+      tarif_horaire: artisan?.tarif_horaire,
+      description: artisan?.description,
+      assurance_rcpro: artisan?.assurance_rcpro,
+      nom: artisan?.nom,
+      prenom: artisan?.prenom,
+      telephone: artisan?.telephone,
+      ville: artisan?.ville
+    });
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEditProfile = () => {
+    setEditedProfile({});
+    setIsEditingProfile(false);
+    setUploadStatus(null);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const { error } = await supabase
+        .from('artisans')
+        .update(editedProfile)
+        .eq('id', artisanId);
+
+      if (error) throw error;
+
+      setArtisan({ ...artisan!, ...editedProfile });
+      setIsEditingProfile(false);
+      setUploadStatus({ type: 'success', message: 'Profil mis à jour avec succès' });
+      setTimeout(() => setUploadStatus(null), 3000);
+    } catch (error) {
+      console.error('Erreur:', error);
+      setUploadStatus({ type: 'error', message: 'Erreur lors de la mise à jour du profil' });
     }
   };
 
@@ -625,46 +666,153 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
               )
             ) : artisan ? (
               <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">Informations du profil</h2>
+                  {!isEditingProfile ? (
+                    <button
+                      onClick={handleStartEditProfile}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Modifier le profil
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCancelEditProfile}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Annuler
+                      </button>
+                      <button
+                        onClick={handleSaveProfile}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        Enregistrer
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {uploadStatus && (
+                  <div className={`p-3 rounded-lg flex items-center gap-2 ${
+                    uploadStatus.type === 'success'
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
+                  }`}>
+                    {uploadStatus.type === 'success' ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    <p className={`text-sm ${
+                      uploadStatus.type === 'success' ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                      {uploadStatus.message}
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations de base</h3>
                     <div className="space-y-4">
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                        {isEditingProfile ? (
+                          <input
+                            type="text"
+                            value={editedProfile.nom || ''}
+                            onChange={(e) => setEditedProfile({ ...editedProfile, nom: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-gray-900 font-medium px-4 py-2 bg-gray-50 rounded-lg">{artisan.nom}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                        {isEditingProfile ? (
+                          <input
+                            type="text"
+                            value={editedProfile.prenom || ''}
+                            onChange={(e) => setEditedProfile({ ...editedProfile, prenom: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-gray-900 font-medium px-4 py-2 bg-gray-50 rounded-lg">{artisan.prenom}</p>
+                        )}
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Métier</label>
-                        <p className="text-gray-900 font-medium">{artisan.metier}</p>
+                        <p className="text-gray-900 font-medium px-4 py-2 bg-gray-100 rounded-lg">{artisan.metier}</p>
+                        <p className="text-xs text-gray-500 mt-1">Le métier ne peut pas être modifié</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Années d'expérience</label>
-                        <input
-                          type="number"
-                          value={artisan.annees_experience}
-                          onChange={(e) => handleUpdateProfile({ annees_experience: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        />
+                        {isEditingProfile ? (
+                          <input
+                            type="number"
+                            value={editedProfile.annees_experience || 0}
+                            onChange={(e) => setEditedProfile({ ...editedProfile, annees_experience: parseInt(e.target.value) })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-gray-900 font-medium px-4 py-2 bg-gray-50 rounded-lg">{artisan.annees_experience} ans</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tarif horaire (FCFA)</label>
-                        <input
-                          type="number"
-                          value={artisan.tarif_horaire}
-                          onChange={(e) => handleUpdateProfile({ tarif_horaire: parseInt(e.target.value) })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        />
+                        {isEditingProfile ? (
+                          <input
+                            type="number"
+                            value={editedProfile.tarif_horaire || 0}
+                            onChange={(e) => setEditedProfile({ ...editedProfile, tarif_horaire: parseInt(e.target.value) })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-gray-900 font-medium px-4 py-2 bg-gray-50 rounded-lg">{artisan.tarif_horaire.toLocaleString()} FCFA/h</p>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Certifications et sécurité</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact et localisation</h3>
                     <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={artisan.assurance_rcpro}
-                          onChange={(e) => handleUpdateProfile({ assurance_rcpro: e.target.checked })}
-                          className="w-5 h-5 rounded"
-                        />
-                        <label className="text-gray-700">Assurance RC Pro active</label>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                          <Phone className="w-4 h-4" />
+                          Téléphone
+                        </label>
+                        {isEditingProfile ? (
+                          <input
+                            type="tel"
+                            value={editedProfile.telephone || ''}
+                            onChange={(e) => setEditedProfile({ ...editedProfile, telephone: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-gray-900 font-medium px-4 py-2 bg-gray-50 rounded-lg">{artisan.telephone || 'Non renseigné'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          Ville
+                        </label>
+                        {isEditingProfile ? (
+                          <input
+                            type="text"
+                            value={editedProfile.ville || ''}
+                            onChange={(e) => setEditedProfile({ ...editedProfile, ville: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-gray-900 font-medium px-4 py-2 bg-gray-50 rounded-lg">{artisan.ville || 'Non renseigné'}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Certifications</label>
@@ -677,9 +825,26 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                               </span>
                             ))
                           ) : (
-                            <p className="text-gray-500 text-sm">Aucune certification</p>
+                            <p className="text-gray-500 text-sm px-4 py-2">Aucune certification</p>
                           )}
                         </div>
+                      </div>
+                      <div className="flex items-center gap-3 pt-2">
+                        {isEditingProfile ? (
+                          <input
+                            type="checkbox"
+                            checked={editedProfile.assurance_rcpro || false}
+                            onChange={(e) => setEditedProfile({ ...editedProfile, assurance_rcpro: e.target.checked })}
+                            className="w-5 h-5 rounded"
+                          />
+                        ) : (
+                          <div className={`w-5 h-5 rounded flex items-center justify-center ${
+                            artisan.assurance_rcpro ? 'bg-green-500' : 'bg-gray-300'
+                          }`}>
+                            {artisan.assurance_rcpro && <CheckCircle className="w-4 h-4 text-white" />}
+                          </div>
+                        )}
+                        <label className="text-gray-700 font-medium">Assurance RC Pro active</label>
                       </div>
                     </div>
                   </div>
@@ -687,13 +852,21 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Description de l'entreprise</h3>
-                  <textarea
-                    value={artisan.description}
-                    onChange={(e) => handleUpdateProfile({ description: e.target.value })}
-                    rows={5}
-                    placeholder="Décrivez votre entreprise, vos services, et ce qui vous distingue..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
+                  {isEditingProfile ? (
+                    <textarea
+                      value={editedProfile.description || ''}
+                      onChange={(e) => setEditedProfile({ ...editedProfile, description: e.target.value })}
+                      rows={5}
+                      placeholder="Décrivez votre entreprise, vos services, et ce qui vous distingue..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {artisan.description || 'Aucune description disponible'}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>
