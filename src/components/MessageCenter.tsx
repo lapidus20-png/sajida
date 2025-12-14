@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, MessageSquare, X, AlertCircle } from 'lucide-react';
+import { Send, MessageSquare, X, AlertCircle, Lock, CheckCircle } from 'lucide-react';
 import { supabase, Message } from '../lib/supabase';
 
 interface MessageCenterProps {
@@ -8,7 +8,16 @@ interface MessageCenterProps {
   recipientName: string;
   contextId?: string;
   contextType?: 'job' | 'quote';
+  contractId?: string;
   onClose: () => void;
+}
+
+interface ClientContactInfo {
+  email: string;
+  telephone: string;
+  adresse: string;
+  ville: string;
+  masked: boolean;
 }
 
 export default function MessageCenter({
@@ -17,6 +26,7 @@ export default function MessageCenter({
   recipientName,
   contextId,
   contextType,
+  contractId,
   onClose,
 }: MessageCenterProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -24,14 +34,34 @@ export default function MessageCenter({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [clientInfo, setClientInfo] = useState<ClientContactInfo | null>(null);
+  const [showContactInfo, setShowContactInfo] = useState(false);
 
   useEffect(() => {
     loadMessages();
+    loadClientContactInfo();
     const subscription = subscribeToMessages();
     return () => {
       subscription?.unsubscribe();
     };
   }, [userId, recipientId, contextId]);
+
+  const loadClientContactInfo = async () => {
+    if (!contractId) return;
+
+    try {
+      const { data, error } = await supabase.rpc('get_client_contact_info', {
+        p_client_id: recipientId,
+        p_requester_id: userId,
+        p_contract_id: contractId
+      });
+
+      if (error) throw error;
+      setClientInfo(data as ClientContactInfo);
+    } catch (err) {
+      console.error('Error loading client info:', err);
+    }
+  };
 
   const loadMessages = async () => {
     try {
@@ -115,15 +145,70 @@ export default function MessageCenter({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl h-96 flex flex-col">
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-4 text-white flex items-center justify-between rounded-t-2xl">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" />
-            <h2 className="font-semibold">Chat avec {recipientName}</h2>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-4 text-white rounded-t-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              <h2 className="font-semibold">Chat avec {recipientName}</h2>
+            </div>
+            <button onClick={onClose} className="hover:bg-white hover:bg-opacity-20 p-1 rounded">
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button onClick={onClose} className="hover:bg-white hover:bg-opacity-20 p-1 rounded">
-            <X className="w-6 h-6" />
-          </button>
+
+          {clientInfo && (
+            <div className="bg-white bg-opacity-10 rounded-lg p-3 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  {clientInfo.masked ? (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      Informations du client (protégées)
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Informations du client
+                    </>
+                  )}
+                </h3>
+                <button
+                  onClick={() => setShowContactInfo(!showContactInfo)}
+                  className="text-xs bg-white bg-opacity-20 hover:bg-opacity-30 px-2 py-1 rounded transition-colors"
+                >
+                  {showContactInfo ? 'Masquer' : 'Afficher'}
+                </button>
+              </div>
+
+              {showContactInfo && (
+                <div className="space-y-1 text-sm">
+                  {clientInfo.masked && (
+                    <div className="bg-yellow-500 bg-opacity-20 rounded p-2 mb-2 text-xs">
+                      <AlertCircle className="w-4 h-4 inline mr-1" />
+                      Payez 25% d'acompte pour voir les détails complets
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="opacity-80">Email:</span>
+                    <span className="font-medium">{clientInfo.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="opacity-80">Téléphone:</span>
+                    <span className="font-medium">{clientInfo.telephone}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="opacity-80">Adresse:</span>
+                    <span className="font-medium">{clientInfo.adresse}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="opacity-80">Ville:</span>
+                    <span className="font-medium">{clientInfo.ville}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {error && (
