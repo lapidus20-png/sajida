@@ -294,6 +294,10 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   };
 
   const handleStartEditProfile = () => {
+    const metierArray = artisan?.metier
+      ? (Array.isArray(artisan.metier) ? artisan.metier : [artisan.metier])
+      : [];
+
     setEditedProfile({
       annees_experience: artisan?.annees_experience,
       tarif_horaire: artisan?.tarif_horaire,
@@ -303,7 +307,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       prenom: artisan?.prenom,
       telephone: artisan?.telephone,
       ville: artisan?.ville,
-      metier: artisan?.metier || []
+      metier: metierArray
     });
     setIsEditingProfile(true);
   };
@@ -802,35 +806,41 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                               </button>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              {editedProfile.metier && editedProfile.metier.length > 0 ? (
-                                editedProfile.metier.map((m, idx) => (
-                                  <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                                    {m}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveMetier(m)}
-                                      className="hover:text-emerald-900"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </span>
-                                ))
-                              ) : (
-                                <p className="text-gray-500 text-sm">Aucun métier ajouté</p>
-                              )}
+                              {(() => {
+                                const metiers = editedProfile.metier ? (Array.isArray(editedProfile.metier) ? editedProfile.metier : [editedProfile.metier]) : [];
+                                return metiers.length > 0 ? (
+                                  metiers.map((m, idx) => (
+                                    <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                                      {m}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveMetier(m)}
+                                        className="hover:text-emerald-900"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))
+                                ) : (
+                                  <p className="text-gray-500 text-sm">Aucun métier ajouté</p>
+                                );
+                              })()}
                             </div>
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-2">
-                            {artisan.metier && artisan.metier.length > 0 ? (
-                              artisan.metier.map((m, idx) => (
-                                <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg text-sm font-medium">
-                                  {m}
-                                </span>
-                              ))
-                            ) : (
-                              <p className="text-gray-500 text-sm px-4 py-2">Aucun métier spécifié</p>
-                            )}
+                            {(() => {
+                              const metiers = artisan.metier ? (Array.isArray(artisan.metier) ? artisan.metier : [artisan.metier]) : [];
+                              return metiers.length > 0 && metiers[0] ? (
+                                metiers.map((m, idx) => (
+                                  <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg text-sm font-medium">
+                                    {m}
+                                  </span>
+                                ))
+                              ) : (
+                                <p className="text-gray-500 text-sm px-4 py-2">Aucun métier spécifié</p>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>

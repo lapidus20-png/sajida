@@ -75,8 +75,9 @@ export default function MapView({ artisans, userLat, userLng, onArtisanClick }: 
 
         artisans.forEach((artisan) => {
           if (artisan.latitude && artisan.longitude) {
-            const metierDisplay = artisan.metier && artisan.metier.length > 0
-              ? artisan.metier.join(', ')
+            const metiers = artisan.metier ? (Array.isArray(artisan.metier) ? artisan.metier : [artisan.metier]) : [];
+            const metierDisplay = metiers.length > 0 && metiers[0]
+              ? metiers.join(', ')
               : 'Métier non spécifié';
 
             const marker = new google.maps.Marker({

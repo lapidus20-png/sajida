@@ -411,9 +411,12 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                   <div>
                                     <h4 className="text-white font-bold text-lg">{artisan.nom} {artisan.prenom}</h4>
                                     <p className="text-yellow-400 font-medium">
-                                      {artisan.metier && artisan.metier.length > 0
-                                        ? artisan.metier.join(', ')
-                                        : 'Métier non spécifié'}
+                                      {(() => {
+                                        const metiers = artisan.metier ? (Array.isArray(artisan.metier) ? artisan.metier : [artisan.metier]) : [];
+                                        return metiers.length > 0 && metiers[0]
+                                          ? metiers.join(', ')
+                                          : 'Métier non spécifié';
+                                      })()}
                                     </p>
                                   </div>
                                   <span className="bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">

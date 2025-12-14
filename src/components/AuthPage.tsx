@@ -106,7 +106,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           email: formData.email,
           ville: formData.ville || '',
           adresse: formData.adresse || '',
-          metier: formData.metier,
+          metier: [formData.metier],
           disponible: true,
         });
 

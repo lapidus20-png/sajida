@@ -44,15 +44,18 @@ export default function ArtisanCard({ artisan, onContact, userLat, userLng }: Ar
         </h3>
 
         <div className="flex flex-wrap gap-1 mb-2">
-          {artisan.metier && artisan.metier.length > 0 ? (
-            artisan.metier.map((m, idx) => (
-              <span key={idx} className="text-amber-600 font-semibold">
-                {m}{idx < artisan.metier.length - 1 && ', '}
-              </span>
-            ))
-          ) : (
-            <span className="text-gray-500 text-sm">Métier non spécifié</span>
-          )}
+          {(() => {
+            const metiers = Array.isArray(artisan.metier) ? artisan.metier : [artisan.metier];
+            return metiers && metiers.length > 0 && metiers[0] ? (
+              metiers.map((m, idx) => (
+                <span key={idx} className="text-amber-600 font-semibold">
+                  {m}{idx < metiers.length - 1 && ', '}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-500 text-sm">Métier non spécifié</span>
+            );
+          })()}
         </div>
 
         <div className="flex items-center gap-1 mb-3">
