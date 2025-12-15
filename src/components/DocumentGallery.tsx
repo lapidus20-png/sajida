@@ -184,8 +184,17 @@ export default function DocumentGallery({ userId, jobRequestId }: DocumentGaller
       link.download = file.name;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+
+      setTimeout(() => {
+        try {
+          if (link.parentNode === document.body) {
+            document.body.removeChild(link);
+          }
+          window.URL.revokeObjectURL(url);
+        } catch (e) {
+          console.error('Cleanup error:', e);
+        }
+      }, 100);
     } catch (error) {
       console.error('Download error:', error);
     }
