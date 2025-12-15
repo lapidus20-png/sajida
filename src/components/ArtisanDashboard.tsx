@@ -95,7 +95,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         jobsQuery,
         supabase
           .from('quotes')
-          .select('id, job_request_id, artisan_id, montant, description, delai, statut, created_at')
+          .select('id, job_request_id, artisan_id, montant_total, description_travaux, delai_execution, statut, created_at')
           .eq('artisan_id', artisanId)
           .order('created_at', { ascending: false })
           .limit(50),
