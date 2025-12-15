@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader as GoogleMapsLoader } from '@googlemaps/js-api-loader';
 import { MapPin, Loader } from 'lucide-react';
 
 interface MapViewProps {
@@ -33,17 +32,47 @@ export default function MapView({ artisans, userLat, userLng, onArtisanClick }: 
       return;
     }
 
-    const loader = new GoogleMapsLoader({
-      apiKey,
-      version: 'weekly',
-      libraries: ['marker'],
-    });
+    const loadMap = async () => {
+      try {
+        if (window.google && window.google.maps) {
+          if (!mapRef.current) return;
+          initMap();
+          return;
+        }
 
-    loader
-      .load()
-      .then((google) => {
-        if (!mapRef.current) return;
+        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+        if (existingScript) {
+          existingScript.addEventListener('load', () => {
+            if (!mapRef.current) return;
+            initMap();
+          });
+          return;
+        }
 
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker`;
+        script.async = true;
+        script.defer = true;
+
+        script.onload = initMap;
+
+        script.onerror = () => {
+          console.error('Error loading Google Maps');
+          setError('Erreur lors du chargement de la carte');
+          setLoading(false);
+        };
+
+        document.head.appendChild(script);
+      } catch (err) {
+        console.error('Error loading Google Maps:', err);
+        setError('Erreur lors du chargement de la carte');
+        setLoading(false);
+      }
+    };
+
+    const initMap = () => {
+      if (!mapRef.current) return;
+      try {
         const centerLat = userLat || 12.3714;
         const centerLng = userLng || -1.5197;
 
@@ -119,12 +148,14 @@ export default function MapView({ artisans, userLat, userLng, onArtisanClick }: 
         });
 
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Error loading Google Maps:', err);
-        setError('Erreur lors du chargement de la carte');
+      } catch (err) {
+        console.error('Error initializing map:', err);
+        setError('Erreur lors de l\'initialisation de la carte');
         setLoading(false);
-      });
+      }
+    };
+
+    loadMap();
 
     return () => {
       markersRef.current.forEach((marker) => marker.setMap(null));

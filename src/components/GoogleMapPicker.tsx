@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, X, Loader } from 'lucide-react';
-import { Loader as GoogleMapsLoader } from '@googlemaps/js-api-loader';
 
 interface GoogleMapPickerProps {
   onLocationSelect: (latitude: number, longitude: number, address: string) => void;
@@ -34,20 +33,49 @@ export default function GoogleMapPicker({
       return;
     }
 
-    const loader = new GoogleMapsLoader({
-      apiKey,
-      version: 'weekly',
-      libraries: ['places', 'geocoding', 'marker'],
-      language: 'fr',
-      region: 'BF',
-    });
+    const loadMap = async () => {
+      try {
+        if (window.google && window.google.maps) {
+          if (!mapRef.current) return;
+          initMap();
+          return;
+        }
 
-    loader
-      .load()
-      .then((google) => {
-        if (!mapRef.current) return;
+        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+        if (existingScript) {
+          existingScript.addEventListener('load', () => {
+            if (!mapRef.current) return;
+            initMap();
+          });
+          return;
+        }
 
-        const map = new google.maps.Map(mapRef.current, {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geocoding,marker&language=fr&region=BF`;
+        script.async = true;
+        script.defer = true;
+
+        script.onload = initMap;
+
+        script.onerror = () => {
+          console.error('Error loading Google Maps');
+          setError('Erreur lors du chargement de la carte');
+          setLoading(false);
+        };
+
+        document.head.appendChild(script);
+      } catch (err) {
+        console.error('Error loading Google Maps:', err);
+        setError('Erreur lors du chargement de la carte');
+        setLoading(false);
+      }
+    };
+
+    const initMap = () => {
+      if (!mapRef.current) return;
+      try {
+
+          const map = new google.maps.Map(mapRef.current, {
           center: { lat: latitude, lng: longitude },
           zoom: 13,
           mapTypeControl: true,
@@ -107,12 +135,14 @@ export default function GoogleMapPicker({
 
         reverseGeocode(latitude, longitude);
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Error loading Google Maps:', err);
-        setError('Erreur lors du chargement de la carte');
+      } catch (err) {
+        console.error('Error initializing map:', err);
+        setError('Erreur lors de l\'initialisation de la carte');
         setLoading(false);
-      });
+      }
+    };
+
+    loadMap();
   }, []);
 
   const reverseGeocode = async (lat: number, lng: number) => {
