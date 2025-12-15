@@ -118,7 +118,7 @@ export interface Quote {
   materiel_fourni: string[];
   conditions_paiement: string;
   statut: 'en_attente' | 'accepte' | 'refuse' | 'expire';
-  validite_jusqu_au: string;
+  validite_jusqu_au: string | null;
   created_at: string;
   updated_at: string;
 }

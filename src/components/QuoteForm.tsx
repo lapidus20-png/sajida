@@ -1,26 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertCircle, X } from 'lucide-react';
-import { supabase, JobRequest } from '../lib/supabase';
+import { supabase, JobRequest, Quote } from '../lib/supabase';
 
 interface QuoteFormProps {
   jobRequest: JobRequest;
   artisanId: string;
   onSuccess: () => void;
   onCancel: () => void;
+  existingQuote?: Quote | null;
 }
 
-export default function QuoteForm({ jobRequest, artisanId, onSuccess, onCancel }: QuoteFormProps) {
+export default function QuoteForm({ jobRequest, artisanId, onSuccess, onCancel, existingQuote }: QuoteFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [materiel, setMateriel] = useState<string[]>([]);
+  const [materiel, setMateriel] = useState<string[]>(existingQuote?.materiel_fourni || []);
   const [formData, setFormData] = useState({
-    montant_total: '',
-    montant_acompte: '',
-    delai_execution: '',
-    description_travaux: '',
-    conditions_paiement: '',
-    validite_jusqu_au: '',
+    montant_total: existingQuote?.montant_total?.toString() || '',
+    montant_acompte: existingQuote?.montant_acompte?.toString() || '',
+    delai_execution: existingQuote?.delai_execution?.toString() || '',
+    description_travaux: existingQuote?.description_travaux || '',
+    conditions_paiement: existingQuote?.conditions_paiement || '',
+    validite_jusqu_au: existingQuote?.validite_jusqu_au || '',
   });
+
+  useEffect(() => {
+    if (existingQuote) {
+      setMateriel(existingQuote.materiel_fourni || []);
+      setFormData({
+        montant_total: existingQuote.montant_total?.toString() || '',
+        montant_acompte: existingQuote.montant_acompte?.toString() || '',
+        delai_execution: existingQuote.delai_execution?.toString() || '',
+        description_travaux: existingQuote.description_travaux || '',
+        conditions_paiement: existingQuote.conditions_paiement || '',
+        validite_jusqu_au: existingQuote.validite_jusqu_au || '',
+      });
+    }
+  }, [existingQuote]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -43,25 +58,37 @@ export default function QuoteForm({ jobRequest, artisanId, onSuccess, onCancel }
     setLoading(true);
 
     try {
-      const { error: insertError } = await supabase
-        .from('quotes')
-        .insert({
-          job_request_id: jobRequest.id,
-          artisan_id: artisanId,
-          montant_total: parseInt(formData.montant_total) || 0,
-          montant_acompte: parseInt(formData.montant_acompte) || 0,
-          delai_execution: parseInt(formData.delai_execution) || 0,
-          description_travaux: formData.description_travaux,
-          materiel_fourni: materiel,
-          conditions_paiement: formData.conditions_paiement,
-          validite_jusqu_au: formData.validite_jusqu_au,
-          statut: 'en_attente',
-        });
+      const quoteData = {
+        job_request_id: jobRequest.id,
+        artisan_id: artisanId,
+        montant_total: parseInt(formData.montant_total) || 0,
+        montant_acompte: parseInt(formData.montant_acompte) || 0,
+        delai_execution: parseInt(formData.delai_execution) || 0,
+        description_travaux: formData.description_travaux,
+        materiel_fourni: materiel,
+        conditions_paiement: formData.conditions_paiement,
+        validite_jusqu_au: formData.validite_jusqu_au || null,
+        statut: 'en_attente',
+      };
 
-      if (insertError) throw new Error(insertError.message);
+      if (existingQuote) {
+        const { error: updateError } = await supabase
+          .from('quotes')
+          .update(quoteData)
+          .eq('id', existingQuote.id);
+
+        if (updateError) throw new Error(updateError.message);
+      } else {
+        const { error: insertError } = await supabase
+          .from('quotes')
+          .insert(quoteData);
+
+        if (insertError) throw new Error(insertError.message);
+      }
+
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la création du devis');
+      setError(err instanceof Error ? err.message : `Erreur lors de ${existingQuote ? 'la modification' : 'la création'} du devis`);
     } finally {
       setLoading(false);
     }
@@ -71,7 +98,7 @@ export default function QuoteForm({ jobRequest, artisanId, onSuccess, onCancel }
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Créer un devis</h2>
+          <h2 className="text-2xl font-bold">{existingQuote ? 'Modifier le devis' : 'Créer un devis'}</h2>
           <button onClick={onCancel} className="hover:bg-white hover:bg-opacity-20 p-2 rounded-lg">
             <X className="w-6 h-6" />
           </button>
@@ -228,7 +255,7 @@ export default function QuoteForm({ jobRequest, artisanId, onSuccess, onCancel }
               disabled={loading}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors"
             >
-              {loading ? 'Envoi en cours...' : 'Envoyer le devis'}
+              {loading ? (existingQuote ? 'Modification...' : 'Envoi en cours...') : (existingQuote ? 'Modifier le devis' : 'Envoyer le devis')}
             </button>
           </div>
         </form>

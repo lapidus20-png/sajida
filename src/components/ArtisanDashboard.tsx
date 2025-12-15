@@ -40,6 +40,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
   const [showCreateQuote, setShowCreateQuote] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedProfile, setEditedProfile] = useState<Partial<Artisan>>({});
   const [newMetier, setNewMetier] = useState('');
@@ -95,7 +96,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         jobsQuery,
         supabase
           .from('quotes')
-          .select('id, job_request_id, artisan_id, montant_total, description_travaux, delai_execution, statut, created_at')
+          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, description_travaux, delai_execution, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at')
           .eq('artisan_id', artisanId)
           .order('created_at', { ascending: false })
           .limit(50),
@@ -189,6 +190,12 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
     } catch (error: any) {
       setPasswordError(error.message || 'Erreur lors du changement de mot de passe');
     }
+  };
+
+  const handleEditQuote = (quote: Quote, job: JobRequest) => {
+    setSelectedJob(job);
+    setEditingQuote(quote);
+    setShowCreateQuote(true);
   };
 
   const handlePortfolioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -720,14 +727,27 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                                 {quote.statut}
                               </span>
                               <span className="text-gray-600">⏱️ {quote.delai_execution} jours</span>
-                              <span className="text-gray-600">📅 Valide jusqu'au {new Date(quote.validite_jusqu_au).toLocaleDateString('fr-FR')}</span>
+                              {quote.validite_jusqu_au && (
+                                <span className="text-gray-600">📅 Valide jusqu'au {new Date(quote.validite_jusqu_au).toLocaleDateString('fr-FR')}</span>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-emerald-600">
-                              {quote.montant_total.toLocaleString()}
-                            </p>
-                            <p className="text-xs text-gray-600">FCFA</p>
+                          <div className="text-right flex flex-col items-end gap-2">
+                            <div>
+                              <p className="text-2xl font-bold text-emerald-600">
+                                {quote.montant_total.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-gray-600">FCFA</p>
+                            </div>
+                            {quote.statut === 'en_attente' && (
+                              <button
+                                onClick={() => handleEditQuote(quote, job!)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                Modifier
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1326,14 +1346,17 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         <QuoteForm
           jobRequest={selectedJob}
           artisanId={artisanId}
+          existingQuote={editingQuote}
           onSuccess={() => {
             setShowCreateQuote(false);
             setSelectedJob(null);
+            setEditingQuote(null);
             loadData();
           }}
           onCancel={() => {
             setShowCreateQuote(false);
             setSelectedJob(null);
+            setEditingQuote(null);
           }}
         />
       )}
