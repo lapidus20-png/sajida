@@ -13,7 +13,8 @@
     "setup-storage": "node scripts/create-storage-buckets.mjs && node scripts/create-storage-policies.mjs",
     "setup-documents": "node scripts/setup-client-documents.mjs",
     "fix-auth": "node scripts/fix-auth-simple.mjs",
-    "disable-rls": "node scripts/disable-rls-with-service-key.mjs"
+    "disable-rls": "node scripts/disable-rls-with-service-key.mjs",
+    "check-saved-jobs": "node scripts/check-saved-jobs.mjs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
