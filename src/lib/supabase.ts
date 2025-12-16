@@ -99,7 +99,7 @@ export interface JobRequest {
   budget_max: number;
   date_souhaitee: string | null;
   date_limite_devis: string | null;
-  statut: 'publiee' | 'en_negociation' | 'attribuee' | 'en_cours' | 'terminee' | 'annulee';
+  statut: 'brouillon' | 'publiee' | 'en_negociation' | 'attribuee' | 'en_cours' | 'terminee' | 'annulee';
   images_url: string[];
   latitude?: number;
   longitude?: number;
