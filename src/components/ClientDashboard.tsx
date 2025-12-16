@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen, Send, EyeOff } from 'lucide-react';
 import { supabase, JobRequest, Quote } from '../lib/supabase';
 import JobRequestForm from './JobRequestForm';
 import DocumentGallery from './DocumentGallery';
@@ -136,6 +136,8 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'brouillon':
+        return 'bg-gray-100 text-gray-800';
       case 'publiee':
         return 'bg-blue-100 text-blue-800';
       case 'en_negociation':
@@ -143,7 +145,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       case 'attribuee':
         return 'bg-green-100 text-green-800';
       case 'en_cours':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-orange-100 text-orange-800';
       case 'terminee':
         return 'bg-emerald-100 text-emerald-800';
       default:
@@ -153,6 +155,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
+      brouillon: 'Brouillon',
       publiee: 'Publiée',
       en_negociation: 'En négociation',
       attribuee: 'Attribuée',
@@ -161,6 +164,25 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       annulee: 'Annulée',
     };
     return labels[status] || status;
+  };
+
+  const handleTogglePublish = async (jobId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'brouillon' ? 'publiee' : 'brouillon';
+      const { error } = await supabase
+        .from('job_requests')
+        .update({ statut: newStatus })
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      setJobRequests(prev => prev.map(job =>
+        job.id === jobId ? { ...job, statut: newStatus } : job
+      ));
+    } catch (error) {
+      console.error('Erreur lors de la publication:', error);
+      alert('Erreur lors de la publication de la demande');
+    }
   };
 
   const stats = {
@@ -318,11 +340,13 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                   {jobRequests.map(job => (
                     <div
                       key={job.id}
-                      onClick={() => setSelectedJob(job)}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer hover:border-blue-300"
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow hover:border-blue-300"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                        <div
+                          className="flex-1 cursor-pointer"
+                          onClick={() => setSelectedJob(job)}
+                        >
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-semibold text-gray-900">{job.titre}</h3>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(job.statut)}`}>
@@ -336,11 +360,38 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                             <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-blue-600">
-                            {quotes.filter(q => q.job_request_id === job.id).length}
-                          </p>
-                          <p className="text-xs text-gray-600">devis</p>
+                        <div className="flex flex-col items-end gap-3">
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-blue-600">
+                              {quotes.filter(q => q.job_request_id === job.id).length}
+                            </p>
+                            <p className="text-xs text-gray-600">devis</p>
+                          </div>
+                          {(job.statut === 'brouillon' || job.statut === 'publiee') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTogglePublish(job.id, job.statut);
+                              }}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                                job.statut === 'brouillon'
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                              }`}
+                            >
+                              {job.statut === 'brouillon' ? (
+                                <>
+                                  <Send className="w-4 h-4" />
+                                  Publier
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className="w-4 h-4" />
+                                  Dépublier
+                                </>
+                              )}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
