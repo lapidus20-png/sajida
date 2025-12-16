@@ -36,8 +36,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           description: 'Rénovation complète d\'une salle de bain de 8m² : changement carrelage, plomberie, électricité',
           categorie: 'plomberie',
           statut: 'publiee',
-          budget_min: 2000000,
-          budget_max: 2500000,
+          budget: 2000000,
           localisation: 'Zone 1, Secteur 4',
           ville: 'Ouagadougou',
           date_souhaitee: new Date(Date.now() + 5184000000).toISOString().split('T')[0],
@@ -53,8 +52,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           description: 'Construction d\'une terrasse extérieure en bois composite, 20m²',
           categorie: 'maconnerie',
           statut: 'en_negociation',
-          budget_min: 1500000,
-          budget_max: 1800000,
+          budget: 1500000,
           localisation: 'Quartier Lafiabougou',
           ville: 'Bobo-Dioulasso',
           date_souhaitee: new Date(Date.now() + 2592000000).toISOString().split('T')[0],
@@ -70,8 +68,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           description: 'Installation électrique complète pour nouvelle construction',
           categorie: 'electricite',
           statut: 'en_cours',
-          budget_min: 3000000,
-          budget_max: 3200000,
+          budget: 3000000,
           localisation: 'Ouaga 2000',
           ville: 'Ouagadougou',
           date_souhaitee: new Date(Date.now() + 1814400000).toISOString().split('T')[0],
@@ -107,7 +104,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
     try {
       const { data: jobsData, error: jobsError } = await supabase
         .from('job_requests')
-        .select('id, client_id, titre, description, categorie, statut, budget_min, budget_max, ville, date_souhaitee, created_at')
+        .select('id, client_id, titre, description, categorie, statut, budget, ville, date_souhaitee, created_at')
         .eq('client_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -335,7 +332,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                           <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
                           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                             <span>📍 {job.localisation}</span>
-                            <span>💰 {job.budget_min.toLocaleString()} - {job.budget_max.toLocaleString()} FCFA</span>
+                            <span>💰 {job.budget.toLocaleString()} FCFA</span>
                             <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                           </div>
                         </div>

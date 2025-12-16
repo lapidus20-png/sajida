@@ -36,8 +36,7 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
     categorie: '',
     localisation: '',
     ville: '',
-    budget_min: '',
-    budget_max: '',
+    budget: '',
     date_souhaitee: '',
     date_limite_devis: '',
   });
@@ -72,8 +71,7 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
           categorie: formData.categorie,
           localisation: formData.localisation,
           ville: formData.ville,
-          budget_min: parseInt(formData.budget_min) || 0,
-          budget_max: parseInt(formData.budget_max) || 0,
+          budget: parseInt(formData.budget) || 0,
           date_souhaitee: formData.date_souhaitee || null,
           date_limite_devis: formData.date_limite_devis || null,
           images_url: images,
@@ -180,30 +178,20 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Budget minimum (FCFA)</label>
-              <input
-                type="number"
-                name="budget_min"
-                value={formData.budget_min}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Budget maximum (FCFA)</label>
-              <input
-                type="number"
-                name="budget_max"
-                value={formData.budget_max}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Budget du projet (FCFA)</label>
+            <input
+              type="number"
+              name="budget"
+              value={formData.budget}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ex: 500000"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Visible uniquement par vous. Les artisans sélectionnés devront débourser 25% de ce montant pour accéder à vos coordonnées.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

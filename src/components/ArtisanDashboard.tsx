@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck, Bookmark, Settings, Edit, X, Save } from 'lucide-react';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck, Bookmark, Settings, Edit, X, Save, Unlock } from 'lucide-react';
 import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance, User as UserType } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
 import { storageService, STORAGE_LIMITS } from '../lib/storageService';
 import { getJobCategoriesForMetiers } from '../lib/categoryMapping';
+import { unlockService, ClientDetails } from '../lib/unlockService';
 
 interface ArtisanDashboardProps {
   artisanId: string;
@@ -50,6 +51,9 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedDocuments, setUploadedDocuments] = useState<Array<{ name: string; url: string; path: string }>>([]);
+  const [unlockedJobs, setUnlockedJobs] = useState<string[]>([]);
+  const [clientDetails, setClientDetails] = useState<Record<string, ClientDetails>>({});
+  const [unlockingJob, setUnlockingJob] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -83,7 +87,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       const jobsQuery = supabase
         .from('job_requests')
-        .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
+        .select('id, titre, description, ville, localisation, statut, budget, created_at, latitude, longitude, categorie')
         .eq('statut', 'publiee')
         .order('created_at', { ascending: false })
         .limit(20);
@@ -123,6 +127,16 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       if (!savedJobsResult.error && savedJobsResult.data) {
         setSavedJobs(savedJobsResult.data.map(sj => sj.job_request_id));
+      }
+
+      const unlockedJobIds = await unlockService.getUnlockedJobIds(artisanId);
+      setUnlockedJobs(unlockedJobIds);
+
+      for (const jobId of unlockedJobIds) {
+        const details = await unlockService.getClientDetails(jobId, artisanId);
+        if (details) {
+          setClientDetails(prev => ({ ...prev, [jobId]: details }));
+        }
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -325,6 +339,43 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       setSavedJobs(savedJobs.filter(id => id !== jobId));
     } catch (error) {
       console.error('Erreur:', error);
+    }
+  };
+
+  const handleUnlockJob = async (job: JobRequest) => {
+    if (!job.budget) {
+      alert('Le budget de ce projet n\'est pas disponible.');
+      return;
+    }
+
+    const unlockFee = Math.round(job.budget * 0.25);
+    const confirmed = window.confirm(
+      `Débloquer les coordonnées du client coûte ${unlockFee.toLocaleString()} FCFA (25% du budget du projet).\n\nVoulez-vous continuer?`
+    );
+
+    if (!confirmed) return;
+
+    setUnlockingJob(job.id);
+    try {
+      const result = await unlockService.initiateUnlock(job.id, artisanId, unlockFee);
+
+      if (result.success) {
+        setUnlockedJobs([...unlockedJobs, job.id]);
+
+        const details = await unlockService.getClientDetails(job.id, artisanId);
+        if (details) {
+          setClientDetails(prev => ({ ...prev, [job.id]: details }));
+        }
+
+        alert('Coordonnées débloquées avec succès!');
+      } else {
+        alert(`Erreur: ${result.error || 'Impossible de débloquer les coordonnées'}`);
+      }
+    } catch (error) {
+      console.error('Unlock error:', error);
+      alert('Une erreur s\'est produite lors du déverrouillage.');
+    } finally {
+      setUnlockingJob(null);
     }
   };
 
@@ -586,6 +637,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                         ? calculateDistance(artisan.latitude, artisan.longitude, job.latitude, job.longitude)
                         : null;
                     const isSaved = savedJobs.includes(job.id);
+                    const isUnlocked = unlockedJobs.includes(job.id);
+                    const details = clientDetails[job.id];
 
                     return (
                       <div
@@ -602,15 +655,33 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                                   {distance} km
                                 </span>
                               )}
+                              {isUnlocked && (
+                                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                                  <Unlock className="w-3 h-3" />
+                                  Débloqué
+                                </span>
+                              )}
                             </div>
                             <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
                             <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
                               <span>📍 {job.localisation}</span>
-                              <span>💰 {job.budget_min.toLocaleString()} - {job.budget_max.toLocaleString()} FCFA</span>
                               <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                             </div>
+                            {isUnlocked && details && (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                                <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                                  <Lock className="w-4 h-4" />
+                                  Coordonnées du client
+                                </h4>
+                                <div className="space-y-1 text-sm">
+                                  <p className="text-gray-700"><strong>Nom:</strong> {details.nom} {details.prenom}</p>
+                                  <p className="text-gray-700"><strong>Email:</strong> {details.email}</p>
+                                  <p className="text-gray-700"><strong>Téléphone:</strong> {details.telephone}</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col gap-2">
                             <button
                               onClick={() => isSaved ? handleUnsaveJob(job.id) : handleSaveJob(job.id)}
                               className={`${
@@ -622,6 +693,16 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                             >
                               <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
                             </button>
+                            {!isUnlocked && (
+                              <button
+                                onClick={() => handleUnlockJob(job)}
+                                disabled={unlockingJob === job.id}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-2"
+                              >
+                                <Lock className="w-4 h-4" />
+                                {unlockingJob === job.id ? 'En cours...' : 'Débloquer'}
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setSelectedJob(job);
@@ -652,6 +733,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                       artisan?.latitude && artisan?.longitude && job.latitude && job.longitude
                         ? calculateDistance(artisan.latitude, artisan.longitude, job.latitude, job.longitude)
                         : null;
+                    const isUnlocked = unlockedJobs.includes(job.id);
+                    const details = clientDetails[job.id];
 
                     return (
                       <div
@@ -669,15 +752,33 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                                   {distance} km
                                 </span>
                               )}
+                              {isUnlocked && (
+                                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                                  <Unlock className="w-3 h-3" />
+                                  Débloqué
+                                </span>
+                              )}
                             </div>
                             <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
                             <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
                               <span>📍 {job.localisation}</span>
-                              <span>💰 {job.budget_min.toLocaleString()} - {job.budget_max.toLocaleString()} FCFA</span>
                               <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                             </div>
+                            {isUnlocked && details && (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                                <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                                  <Lock className="w-4 h-4" />
+                                  Coordonnées du client
+                                </h4>
+                                <div className="space-y-1 text-sm">
+                                  <p className="text-gray-700"><strong>Nom:</strong> {details.nom} {details.prenom}</p>
+                                  <p className="text-gray-700"><strong>Email:</strong> {details.email}</p>
+                                  <p className="text-gray-700"><strong>Téléphone:</strong> {details.telephone}</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col gap-2">
                             <button
                               onClick={() => handleUnsaveJob(job.id)}
                               className="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors"
@@ -685,6 +786,16 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>
+                            {!isUnlocked && (
+                              <button
+                                onClick={() => handleUnlockJob(job)}
+                                disabled={unlockingJob === job.id}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-2"
+                              >
+                                <Lock className="w-4 h-4" />
+                                {unlockingJob === job.id ? 'En cours...' : 'Débloquer'}
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setSelectedJob(job);
