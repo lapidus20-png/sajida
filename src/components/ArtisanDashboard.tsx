@@ -87,7 +87,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       const jobsQuery = supabase
         .from('job_requests')
-        .select('id, titre, description, ville, localisation, statut, budget, created_at, latitude, longitude, categorie')
+        .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
         .eq('statut', 'publiee')
         .order('created_at', { ascending: false })
         .limit(20);
@@ -343,12 +343,12 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   };
 
   const handleUnlockJob = async (job: JobRequest) => {
-    if (!job.budget) {
+    if (!job.budget_max) {
       alert('Le budget de ce projet n\'est pas disponible.');
       return;
     }
 
-    const unlockFee = Math.round(job.budget * 0.25);
+    const unlockFee = Math.round(job.budget_max * 0.25);
     const confirmed = window.confirm(
       `Débloquer les coordonnées du client coûte ${unlockFee.toLocaleString()} FCFA (25% du budget du projet).\n\nVoulez-vous continuer?`
     );

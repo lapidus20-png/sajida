@@ -95,7 +95,8 @@ export interface JobRequest {
   categorie: string;
   localisation: string;
   ville: string;
-  budget: number;
+  budget_min: number;
+  budget_max: number;
   date_souhaitee: string | null;
   date_limite_devis: string | null;
   statut: 'publiee' | 'en_negociation' | 'attribuee' | 'en_cours' | 'terminee' | 'annulee';
