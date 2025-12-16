@@ -332,7 +332,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                           <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
                           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                             <span>📍 {job.localisation}</span>
-                            <span>💰 {job.budget.toLocaleString()} FCFA</span>
+                            <span>💰 {job.budget ? job.budget.toLocaleString() : '0'} FCFA</span>
                             <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                           </div>
                         </div>

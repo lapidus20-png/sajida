@@ -866,7 +866,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                   </div>
                                   <div className="flex items-center gap-2 text-slate-300">
                                     <DollarSign className="w-4 h-4 text-green-400" />
-                                    <span>{job.budget.toLocaleString()} FCFA</span>
+                                    <span>{job.budget ? job.budget.toLocaleString() : '0'} FCFA</span>
                                   </div>
                                   <div className="flex items-center gap-2 text-slate-300">
                                     <Calendar className="w-4 h-4 text-purple-400" />
