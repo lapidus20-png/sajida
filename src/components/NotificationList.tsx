@@ -1,33 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Bell, Mail, MessageSquare, X, CheckCircle } from 'lucide-react';
+import { Bell, X, CheckCircle, AlertCircle, Briefcase } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-interface Notification {
+export interface DbNotification {
   id: string;
-  type: string;
-  channel: string;
-  subject: string;
+  user_id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
   message: string;
-  status: string;
+  related_job_id: string | null;
+  read: boolean;
   created_at: string;
-  metadata: Record<string, any>;
 }
 
 interface NotificationListProps {
   userId: string;
-  onClose: () => void;
+  onJobClick?: (jobId: string) => void;
 }
 
-export default function NotificationList({ userId, onClose }: NotificationListProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function NotificationList({ userId, onJobClick }: NotificationListProps) {
+  const [notifications, setNotifications] = useState<DbNotification[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadNotifications();
-    const subscription = subscribeToNotifications();
-    return () => {
-      subscription?.unsubscribe();
-    };
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
   }, [userId]);
 
   const loadNotifications = async () => {
@@ -37,120 +36,187 @@ export default function NotificationList({ userId, onClose }: NotificationListPr
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
 
       if (error) throw error;
       setNotifications(data || []);
     } catch (err) {
       console.error('Error loading notifications:', err);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+
+      if (error) throw error;
+
+      setNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    setLoading(true);
+    try {
+      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+
+      if (unreadIds.length > 0) {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ read: true })
+          .in('id', unreadIds);
+
+        if (error) throw error;
+
+        setNotifications(prev =>
+          prev.map(n => ({ ...n, read: true }))
+        );
+      }
+    } catch (err) {
+      console.error('Error marking all as read:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const subscribeToNotifications = () => {
-    return supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          setNotifications(prev => [payload.new as Notification, ...prev]);
-        }
-      )
-      .subscribe();
-  };
-
-  const getNotificationIcon = (type: string) => {
+  const getIcon = (type: string) => {
     switch (type) {
-      case 'message':
-        return <MessageSquare className="w-5 h-5 text-blue-500" />;
-      case 'payment':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'success':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'warning':
+        return <AlertCircle className="w-5 h-5 text-yellow-600" />;
+      case 'info':
+        return <Briefcase className="w-5 h-5 text-blue-600" />;
       default:
-        return <Bell className="w-5 h-5 text-gray-500" />;
+        return <AlertCircle className="w-5 h-5 text-red-600" />;
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-4 text-white flex items-center justify-between rounded-t-2xl">
-          <div className="flex items-center gap-2">
-            <Bell className="w-5 h-5" />
-            <h2 className="font-semibold">Notifications</h2>
-          </div>
-          <button onClick={onClose} className="hover:bg-white hover:bg-opacity-20 p-1 rounded">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+  const getBackgroundColor = (type: string, read: boolean) => {
+    const opacity = read ? 'opacity-60' : '';
+    switch (type) {
+      case 'success':
+        return `bg-green-50 hover:bg-green-100 border-green-200 ${opacity}`;
+      case 'warning':
+        return `bg-yellow-50 hover:bg-yellow-100 border-yellow-200 ${opacity}`;
+      case 'info':
+        return `bg-blue-50 hover:bg-blue-100 border-blue-200 ${opacity}`;
+      default:
+        return `bg-red-50 hover:bg-red-100 border-red-200 ${opacity}`;
+    }
+  };
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <p>Aucune notification</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors"
+  const handleNotificationClick = (notification: DbNotification) => {
+    markAsRead(notification.id);
+
+    if (notification.related_job_id && onJobClick) {
+      onJobClick(notification.related_job_id);
+      setIsOpen(false);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+      >
+        <Bell className="w-6 h-6" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[32rem] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-cyan-600 p-4 text-white flex items-center justify-between rounded-t-lg z-10">
+              <h3 className="font-semibold">Notifications</h3>
+              <div className="flex gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    disabled={loading}
+                    className="text-sm hover:bg-white hover:bg-opacity-20 px-3 py-1 rounded transition-colors disabled:opacity-50"
+                  >
+                    Tout marquer comme lu
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1">{getNotificationIcon(notif.type)}</div>
-                    <div className="flex-1">
-                      {notif.subject && (
-                        <h3 className="font-semibold text-gray-900 mb-1">{notif.subject}</h3>
-                      )}
-                      <p className="text-sm text-gray-700">{notif.message}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-xs text-gray-500">
-                          {new Date(notif.created_at).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {notifications.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p>Aucune notification</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {notifications.map(notification => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`p-4 cursor-pointer transition-colors border-l-4 ${getBackgroundColor(notification.type, notification.read)} ${
+                      !notification.read ? 'border-l-blue-600' : 'border-l-gray-300'
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                          {notification.title}
+                          {!notification.read && (
+                            <span className="inline-block w-2 h-2 bg-blue-600 rounded-full"></span>
+                          )}
+                        </h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {new Date(notification.created_at).toLocaleString('fr-FR', {
+                            day: '2-digit',
                             month: 'short',
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
-                        </span>
-                        <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
-                          {notif.channel === 'email' ? (
-                            <>
-                              <Mail className="w-3 h-3 inline mr-1" />
-                              Email
-                            </>
-                          ) : (
-                            <>
-                              <MessageSquare className="w-3 h-3 inline mr-1" />
-                              SMS
-                            </>
-                          )}
-                        </span>
-                        {notif.status === 'sent' && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            <CheckCircle className="w-3 h-3 inline mr-1" />
-                            Envoyé
+                        </p>
+                        {notification.related_job_id && (
+                          <span className="inline-block mt-2 text-xs font-semibold text-blue-600">
+                            Cliquer pour voir le projet →
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

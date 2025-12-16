@@ -5,6 +5,7 @@ import QuoteForm from './QuoteForm';
 import { storageService, STORAGE_LIMITS } from '../lib/storageService';
 import { getJobCategoriesForMetiers } from '../lib/categoryMapping';
 import { unlockService, ClientDetails } from '../lib/unlockService';
+import NotificationList from './NotificationList';
 
 interface ArtisanDashboardProps {
   artisanId: string;
@@ -466,6 +467,18 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
     },
   };
 
+  const handleNotificationClick = (jobId: string) => {
+    setActiveTab('opportunites');
+    const jobElement = document.getElementById(`job-${jobId}`);
+    if (jobElement) {
+      jobElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      jobElement.classList.add('ring-4', 'ring-blue-400');
+      setTimeout(() => {
+        jobElement.classList.remove('ring-4', 'ring-blue-400');
+      }, 2000);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
@@ -474,7 +487,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
             <h1 className="text-2xl font-bold text-gray-900">Espace Artisan</h1>
             <p className="text-sm text-gray-600">{artisan?.nom} {artisan?.prenom}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
+            <NotificationList userId={userId} onJobClick={handleNotificationClick} />
             <button
               onClick={handleEditProfile}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
@@ -643,6 +657,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                     return (
                       <div
                         key={job.id}
+                        id={`job-${job.id}`}
                         className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow hover:border-emerald-300"
                       >
                         <div className="flex items-start justify-between gap-4">

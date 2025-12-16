@@ -6,13 +6,16 @@ export const METIER_TO_CATEGORY_MAP: Record<string, string[]> = {
   'Menuisier métallique': ['Menuiserie'],
   'Peintre': ['Peinture'],
   'Carreleur': ['Carrelage'],
-  'Couvreur': ['Couverture'],
+  'Couvreur': ['Toiture'],
+  'Chauffagiste': ['Chauffage'],
   'Soudeur': ['Soudure'],
   'Mécanicien': ['Mécanique'],
   'Électromécanicien': ['Électricité', 'Mécanique'],
   'Couturier': ['Couture'],
   'Couturière': ['Couture'],
   'couturiere': ['Couture'],
+  'Vitrier': ['Vitrage'],
+  'Jardinier': ['Jardinage'],
 };
 
 export function getJobCategoriesForMetiers(metiers: string[]): string[] {
