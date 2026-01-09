@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck, Bookmark, Settings, Edit, X, Save, Unlock } from 'lucide-react';
+import { Plus, FileText, TrendingUp, AlertCircle, Star, CheckCircle, Clock, Navigation, Image, Award, User, Lock, Mail, Phone, MapPin, Upload, Trash2, Download, FileCheck, Bookmark, Settings, Edit, X, Save, Unlock, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { supabase, JobRequest, Quote, Artisan, Review, calculateDistance, User as UserType } from '../lib/supabase';
 import QuoteForm from './QuoteForm';
 import { storageService, STORAGE_LIMITS } from '../lib/storageService';
 import { getJobCategoriesForMetiers } from '../lib/categoryMapping';
 import { unlockService, ClientDetails } from '../lib/unlockService';
 import NotificationList from './NotificationList';
+import WalletRecharge from './WalletRecharge';
+import { walletService, WalletBalance, WalletTransaction, APPLICATION_FEE } from '../lib/walletService';
 
 interface ArtisanDashboardProps {
   artisanId: string;
@@ -38,8 +40,11 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const [myQuotes, setMyQuotes] = useState<Quote[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'saved-leads' | 'profil' | 'compte'>('opportunites');
+  const [activeTab, setActiveTab] = useState<'opportunites' | 'mes-devis' | 'saved-leads' | 'portefeuille' | 'profil' | 'compte'>('opportunites');
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
+  const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [showCreateQuote, setShowCreateQuote] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
@@ -139,6 +144,12 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
           setClientDetails(prev => ({ ...prev, [jobId]: details }));
         }
       }
+
+      const balance = await walletService.getBalance(artisanId);
+      setWalletBalance(balance);
+
+      const transactions = await walletService.getTransactions(artisanId);
+      setWalletTransactions(transactions);
     } catch (error) {
       console.error('Erreur:', error);
       setLoading(false);
@@ -211,6 +222,42 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
     setSelectedJob(job);
     setEditingQuote(quote);
     setShowCreateQuote(true);
+  };
+
+  const handleApplyForJob = async (job: JobRequest) => {
+    const currentBalance = walletBalance?.balance || 0;
+
+    if (currentBalance < APPLICATION_FEE) {
+      const deficit = APPLICATION_FEE - currentBalance;
+      if (window.confirm(
+        `Solde insuffisant pour postuler.\n\n` +
+        `Solde actuel: ${walletService.formatAmount(currentBalance)}\n` +
+        `Frais requis: ${walletService.formatAmount(APPLICATION_FEE)}\n` +
+        `Manquant: ${walletService.formatAmount(deficit)}\n\n` +
+        `Voulez-vous recharger votre portefeuille maintenant?`
+      )) {
+        setShowRechargeModal(true);
+      }
+      return;
+    }
+
+    const result = await walletService.debitWallet(
+      artisanId,
+      APPLICATION_FEE,
+      job.id,
+      `Frais de candidature - ${job.titre}`
+    );
+
+    if (result.success) {
+      setWalletBalance(prev => prev ? { ...prev, balance: result.newBalance || 0, total_spent: (prev.total_spent || 0) + APPLICATION_FEE } : null);
+      const transactions = await walletService.getTransactions(artisanId);
+      setWalletTransactions(transactions);
+
+      setSelectedJob(job);
+      setShowCreateQuote(true);
+    } else {
+      alert(`Erreur: ${result.error || 'Impossible de débiter le portefeuille'}`);
+    }
   };
 
   const handlePortfolioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -595,6 +642,17 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                 Opportunités sauvegardées ({savedJobs.length})
               </button>
               <button
+                onClick={() => setActiveTab('portefeuille')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'portefeuille'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Wallet className="w-4 h-4 inline mr-2" />
+                Portefeuille
+              </button>
+              <button
                 onClick={() => setActiveTab('profil')}
                 className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
                   activeTab === 'profil'
@@ -719,13 +777,11 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                               </button>
                             )}
                             <button
-                              onClick={() => {
-                                setSelectedJob(job);
-                                setShowCreateQuote(true);
-                              }}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap"
+                              onClick={() => handleApplyForJob(job)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap flex items-center gap-2"
                             >
-                              Répondre
+                              <span>Répondre</span>
+                              <span className="text-xs opacity-80">({walletService.formatAmount(APPLICATION_FEE)})</span>
                             </button>
                           </div>
                         </div>
@@ -812,13 +868,11 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                               </button>
                             )}
                             <button
-                              onClick={() => {
-                                setSelectedJob(job);
-                                setShowCreateQuote(true);
-                              }}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap"
+                              onClick={() => handleApplyForJob(job)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg whitespace-nowrap flex items-center gap-2"
                             >
-                              Répondre
+                              <span>Répondre</span>
+                              <span className="text-xs opacity-80">({walletService.formatAmount(APPLICATION_FEE)})</span>
                             </button>
                           </div>
                         </div>
@@ -1323,6 +1377,124 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                   </p>
                 </div>
               </div>
+            ) : activeTab === 'portefeuille' ? (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                        <Wallet className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-90">Solde disponible</p>
+                        <p className="text-3xl font-bold">
+                          {walletService.formatAmount(walletBalance?.balance || 0)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowRechargeModal(true)}
+                      className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition-colors flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Recharger
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/20">
+                    <div>
+                      <p className="text-sm opacity-75">Total rechargé</p>
+                      <p className="text-lg font-semibold">
+                        {walletService.formatAmount(walletBalance?.total_recharged || 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm opacity-75">Total dépensé</p>
+                      <p className="text-lg font-semibold">
+                        {walletService.formatAmount(walletBalance?.total_spent || 0)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-blue-900 font-medium mb-1">
+                        Frais de candidature
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        Chaque candidature à une opportunité coûte <strong>{walletService.formatAmount(APPLICATION_FEE)}</strong>.
+                        Rechargez votre portefeuille pour postuler aux opportunités qui vous intéressent.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Historique des transactions</h3>
+                  {walletTransactions.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Aucune transaction pour le moment</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Rechargez votre portefeuille pour commencer
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {walletTransactions.map((transaction) => (
+                        <div
+                          key={transaction.id}
+                          className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              transaction.type === 'recharge'
+                                ? 'bg-green-100'
+                                : transaction.type === 'debit'
+                                ? 'bg-red-100'
+                                : 'bg-blue-100'
+                            }`}>
+                              {transaction.type === 'recharge' ? (
+                                <ArrowDownRight className={`w-5 h-5 text-green-600`} />
+                              ) : transaction.type === 'debit' ? (
+                                <ArrowUpRight className={`w-5 h-5 text-red-600`} />
+                              ) : (
+                                <ArrowDownRight className={`w-5 h-5 text-blue-600`} />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {transaction.type === 'recharge'
+                                  ? 'Rechargement'
+                                  : transaction.type === 'debit'
+                                  ? 'Candidature'
+                                  : 'Remboursement'}
+                              </p>
+                              <p className="text-sm text-gray-600">{transaction.description}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(transaction.created_at).toLocaleString('fr-FR')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-lg font-bold ${
+                              transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transaction.amount > 0 ? '+' : ''}
+                              {walletService.formatAmount(Math.abs(transaction.amount))}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Solde: {walletService.formatAmount(transaction.balance_after)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : activeTab === 'compte' && userAccount ? (
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1483,6 +1655,18 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
             setShowCreateQuote(false);
             setSelectedJob(null);
             setEditingQuote(null);
+          }}
+        />
+      )}
+
+      {showRechargeModal && (
+        <WalletRecharge
+          artisanId={artisanId}
+          currentBalance={walletBalance?.balance || 0}
+          onClose={() => setShowRechargeModal(false)}
+          onSuccess={(newBalance) => {
+            setWalletBalance(prev => prev ? { ...prev, balance: newBalance } : null);
+            walletService.getTransactions(artisanId).then(setWalletTransactions);
           }}
         />
       )}
