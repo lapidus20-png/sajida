@@ -935,7 +935,265 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                   })}
                 </div>
               )
-            ) : artisan ? (
+            ) : activeTab === 'portefeuille' ? (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                        <Wallet className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-90">Solde disponible</p>
+                        <p className="text-3xl font-bold">
+                          {walletService.formatAmount(walletBalance?.balance || 0)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowRechargeModal(true)}
+                      className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition-colors flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Recharger
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/20">
+                    <div>
+                      <p className="text-sm opacity-75">Total rechargé</p>
+                      <p className="text-lg font-semibold">
+                        {walletService.formatAmount(walletBalance?.total_recharged || 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm opacity-75">Total dépensé</p>
+                      <p className="text-lg font-semibold">
+                        {walletService.formatAmount(walletBalance?.total_spent || 0)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-blue-900 font-medium mb-1">
+                        Frais de candidature
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        Chaque candidature à une opportunité coûte <strong>{walletService.formatAmount(APPLICATION_FEE)}</strong>.
+                        Rechargez votre portefeuille pour postuler aux opportunités qui vous intéressent.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Historique des transactions</h3>
+                  {walletTransactions.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Aucune transaction pour le moment</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Rechargez votre portefeuille pour commencer
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {walletTransactions.map((transaction) => (
+                        <div
+                          key={transaction.id}
+                          className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              transaction.type === 'recharge'
+                                ? 'bg-green-100'
+                                : transaction.type === 'debit'
+                                ? 'bg-red-100'
+                                : 'bg-blue-100'
+                            }`}>
+                              {transaction.type === 'recharge' ? (
+                                <ArrowDownRight className={`w-5 h-5 text-green-600`} />
+                              ) : transaction.type === 'debit' ? (
+                                <ArrowUpRight className={`w-5 h-5 text-red-600`} />
+                              ) : (
+                                <ArrowDownRight className={`w-5 h-5 text-blue-600`} />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {transaction.type === 'recharge'
+                                  ? 'Rechargement'
+                                  : transaction.type === 'debit'
+                                  ? 'Candidature'
+                                  : 'Remboursement'}
+                              </p>
+                              <p className="text-sm text-gray-600">{transaction.description}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(transaction.created_at).toLocaleString('fr-FR')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-lg font-bold ${
+                              transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transaction.amount > 0 ? '+' : ''}
+                              {walletService.formatAmount(Math.abs(transaction.amount))}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Solde: {walletService.formatAmount(transaction.balance_after)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : activeTab === 'compte' && userAccount ? (
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-600" />
+                    <p className="text-sm text-blue-800">
+                      <strong>Compte créé le:</strong> {new Date(userAccount.created_at).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    Informations personnelles
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                      <input
+                        type="text"
+                        value={artisan?.nom || ''}
+                        onChange={(e) => handleUpdateProfile({ nom: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                      <input
+                        type="text"
+                        value={artisan?.prenom || ''}
+                        onChange={(e) => handleUpdateProfile({ prenom: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={userAccount.email}
+                        readOnly
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Téléphone
+                      </label>
+                      <input
+                        type="tel"
+                        value={userAccount.telephone || ''}
+                        onChange={(e) => handleUpdateAccount({ telephone: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Adresse
+                      </label>
+                      <input
+                        type="text"
+                        value={userAccount.adresse || ''}
+                        onChange={(e) => handleUpdateAccount({ adresse: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
+                      <input
+                        type="text"
+                        value={userAccount.ville || ''}
+                        onChange={(e) => handleUpdateAccount({ ville: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Lock className="w-5 h-5" />
+                    Changer le mot de passe
+                  </h3>
+                  <div className="max-w-md space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
+                      <input
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        placeholder="Minimum 6 caractères"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirmer le mot de passe</label>
+                      <input
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        placeholder="Retapez le nouveau mot de passe"
+                      />
+                    </div>
+                    {passwordError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-800">{passwordError}</p>
+                      </div>
+                    )}
+                    {passwordSuccess && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-green-800">{passwordSuccess}</p>
+                      </div>
+                    )}
+                    <button
+                      onClick={handlePasswordChange}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+                    >
+                      Mettre à jour le mot de passe
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Type de compte</h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-700">
+                      <strong>Type:</strong> <span className="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium ml-2">{userAccount.user_type}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'profil' && artisan ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-gray-900">Informations du profil</h2>
@@ -1375,264 +1633,6 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                     artisan.statut_verification === 'rejete' ? '✗ Votre profil a été rejeté' :
                     '⏳ Votre profil est en attente de vérification'}
                   </p>
-                </div>
-              </div>
-            ) : activeTab === 'portefeuille' ? (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                        <Wallet className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-sm opacity-90">Solde disponible</p>
-                        <p className="text-3xl font-bold">
-                          {walletService.formatAmount(walletBalance?.balance || 0)}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowRechargeModal(true)}
-                      className="bg-white text-orange-600 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition-colors flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Recharger
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/20">
-                    <div>
-                      <p className="text-sm opacity-75">Total rechargé</p>
-                      <p className="text-lg font-semibold">
-                        {walletService.formatAmount(walletBalance?.total_recharged || 0)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm opacity-75">Total dépensé</p>
-                      <p className="text-lg font-semibold">
-                        {walletService.formatAmount(walletBalance?.total_spent || 0)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-blue-900 font-medium mb-1">
-                        Frais de candidature
-                      </p>
-                      <p className="text-sm text-blue-800">
-                        Chaque candidature à une opportunité coûte <strong>{walletService.formatAmount(APPLICATION_FEE)}</strong>.
-                        Rechargez votre portefeuille pour postuler aux opportunités qui vous intéressent.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Historique des transactions</h3>
-                  {walletTransactions.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Aucune transaction pour le moment</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Rechargez votre portefeuille pour commencer
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {walletTransactions.map((transaction) => (
-                        <div
-                          key={transaction.id}
-                          className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              transaction.type === 'recharge'
-                                ? 'bg-green-100'
-                                : transaction.type === 'debit'
-                                ? 'bg-red-100'
-                                : 'bg-blue-100'
-                            }`}>
-                              {transaction.type === 'recharge' ? (
-                                <ArrowDownRight className={`w-5 h-5 text-green-600`} />
-                              ) : transaction.type === 'debit' ? (
-                                <ArrowUpRight className={`w-5 h-5 text-red-600`} />
-                              ) : (
-                                <ArrowDownRight className={`w-5 h-5 text-blue-600`} />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {transaction.type === 'recharge'
-                                  ? 'Rechargement'
-                                  : transaction.type === 'debit'
-                                  ? 'Candidature'
-                                  : 'Remboursement'}
-                              </p>
-                              <p className="text-sm text-gray-600">{transaction.description}</p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(transaction.created_at).toLocaleString('fr-FR')}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-lg font-bold ${
-                              transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {transaction.amount > 0 ? '+' : ''}
-                              {walletService.formatAmount(Math.abs(transaction.amount))}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Solde: {walletService.formatAmount(transaction.balance_after)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : activeTab === 'compte' && userAccount ? (
-              <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-600" />
-                    <p className="text-sm text-blue-800">
-                      <strong>Compte créé le:</strong> {new Date(userAccount.created_at).toLocaleDateString('fr-FR')}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Mail className="w-5 h-5" />
-                    Informations personnelles
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                      <input
-                        type="text"
-                        value={artisan?.nom || ''}
-                        onChange={(e) => handleUpdateProfile({ nom: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                      <input
-                        type="text"
-                        value={artisan?.prenom || ''}
-                        onChange={(e) => handleUpdateProfile({ prenom: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={userAccount.email}
-                        readOnly
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        Téléphone
-                      </label>
-                      <input
-                        type="tel"
-                        value={userAccount.telephone || ''}
-                        onChange={(e) => handleUpdateAccount({ telephone: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Adresse
-                      </label>
-                      <input
-                        type="text"
-                        value={userAccount.adresse || ''}
-                        onChange={(e) => handleUpdateAccount({ adresse: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
-                      <input
-                        type="text"
-                        value={userAccount.ville || ''}
-                        onChange={(e) => handleUpdateAccount({ ville: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Lock className="w-5 h-5" />
-                    Changer le mot de passe
-                  </h3>
-                  <div className="max-w-md space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
-                      <input
-                        type="password"
-                        value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        placeholder="Minimum 6 caractères"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirmer le mot de passe</label>
-                      <input
-                        type="password"
-                        value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                        placeholder="Retapez le nouveau mot de passe"
-                      />
-                    </div>
-                    {passwordError && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-red-800">{passwordError}</p>
-                      </div>
-                    )}
-                    {passwordSuccess && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
-                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-green-800">{passwordSuccess}</p>
-                      </div>
-                    )}
-                    <button
-                      onClick={handlePasswordChange}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-2 rounded-lg transition-colors"
-                    >
-                      Mettre à jour le mot de passe
-                    </button>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Type de compte</h3>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-700">
-                      <strong>Type:</strong> <span className="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium ml-2">{userAccount.user_type}</span>
-                    </p>
-                  </div>
                 </div>
               </div>
             ) : null}
