@@ -111,7 +111,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
     try {
       const { data: jobsData, error: jobsError } = await supabase
         .from('job_requests')
-        .select('id, client_id, titre, description, categorie, statut, budget_min, budget_max, ville, date_souhaitee, created_at')
+        .select('id, client_id, titre, description, categorie, statut, budget_min, budget_max, localisation, ville, date_souhaitee, created_at')
         .eq('client_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
