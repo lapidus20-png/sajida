@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen, Send, EyeOff, Users } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen, Send, EyeOff, Users, MapPin } from 'lucide-react';
 import { supabase, JobRequest, Quote } from '../lib/supabase';
 import JobRequestForm from './JobRequestForm';
 import DocumentGallery from './DocumentGallery';
 import SelectArtisanModal from './SelectArtisanModal';
+import { calculateDistance, formatDistance } from '../lib/distanceUtils';
 
 interface ClientDashboardProps {
   userId: string;
@@ -44,6 +45,8 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           budget_max: 2000000,
           localisation: 'Zone 1, Secteur 4',
           ville: 'Ouagadougou',
+          latitude: 12.3714,
+          longitude: -1.5197,
           date_souhaitee: new Date(Date.now() + 5184000000).toISOString().split('T')[0],
           date_limite_devis: new Date(Date.now() + 1296000000).toISOString().split('T')[0],
           images_url: [],
@@ -61,6 +64,8 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           budget_max: 1500000,
           localisation: 'Quartier Lafiabougou',
           ville: 'Bobo-Dioulasso',
+          latitude: 11.1770,
+          longitude: -4.2976,
           date_souhaitee: new Date(Date.now() + 2592000000).toISOString().split('T')[0],
           date_limite_devis: new Date(Date.now() + 864000000).toISOString().split('T')[0],
           images_url: [],
@@ -78,6 +83,8 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           budget_max: 3000000,
           localisation: 'Ouaga 2000',
           ville: 'Ouagadougou',
+          latitude: 12.3428,
+          longitude: -1.4844,
           date_souhaitee: new Date(Date.now() + 1814400000).toISOString().split('T')[0],
           date_limite_devis: new Date(Date.now() + 604800000).toISOString().split('T')[0],
           images_url: [],
@@ -111,7 +118,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
     try {
       const { data: jobsData, error: jobsError } = await supabase
         .from('job_requests')
-        .select('id, client_id, titre, description, categorie, statut, budget_min, budget_max, localisation, ville, date_souhaitee, created_at')
+        .select('id, client_id, titre, description, categorie, statut, budget_min, budget_max, localisation, ville, latitude, longitude, date_souhaitee, created_at')
         .eq('client_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -150,7 +157,9 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
               ville,
               quartier,
               metier,
-              photo_url
+              photo_url,
+              latitude,
+              longitude
             )
           `)
           .in('job_request_id', jobIds)
@@ -427,7 +436,10 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                           </div>
                           <p className="text-gray-600 text-sm mb-3 line-clamp-2">{job.description}</p>
                           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                            <span>📍 {job.localisation}</span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {job.localisation}
+                            </span>
                             <span>💰 {job.budget_max ? job.budget_max.toLocaleString() : '0'} FCFA</span>
                             <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                           </div>
@@ -440,6 +452,16 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                                 {jobSelections[job.id].map((selection, idx) => {
                                   const artisan = selection.artisans;
                                   const labels = ['1er choix', '2e choix', '3e choix'];
+
+                                  const distance = job.latitude && job.longitude && artisan.latitude && artisan.longitude
+                                    ? calculateDistance(
+                                        Number(job.latitude),
+                                        Number(job.longitude),
+                                        Number(artisan.latitude),
+                                        Number(artisan.longitude)
+                                      )
+                                    : null;
+
                                   return (
                                     <div key={selection.id} className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                                       <div className="flex items-center gap-2">
@@ -457,6 +479,11 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                                         <div>
                                           <p className="text-sm font-medium text-gray-900">
                                             {artisan.prenom} {artisan.nom}
+                                            {distance !== null && (
+                                              <span className="ml-2 text-xs text-green-700 font-normal">
+                                                ({formatDistance(distance)})
+                                              </span>
+                                            )}
                                           </p>
                                           <p className="text-xs text-gray-600">{labels[selection.selection_order - 1]}</p>
                                         </div>
