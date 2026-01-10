@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Users, AlertCircle, TrendingUp, CheckCircle, Clock, Activity, UserCheck, X, Mail, Phone, MapPin, Calendar, DollarSign, FileText, Ban, Eye, Trash2 } from 'lucide-react';
+import { BarChart3, Users, AlertCircle, TrendingUp, CheckCircle, Clock, Activity, UserCheck, X, Mail, Phone, MapPin, Calendar, DollarSign, FileText, Ban, Eye, Trash2, Settings } from 'lucide-react';
 import { supabase, Artisan, User as UserType, JobRequest } from '../lib/supabase';
 import PaymentTestPanel from './PaymentTestPanel';
+import { AdminSettings } from './AdminSettings';
 
 interface AdminStats {
   users: {
@@ -41,7 +42,7 @@ interface AdminDashboardProps {
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'jobs' | 'reports' | 'payments' | 'artisans'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'jobs' | 'reports' | 'payments' | 'artisans' | 'settings'>('overview');
   const [pendingArtisans, setPendingArtisans] = useState<Artisan[]>([]);
   const [allUsers, setAllUsers] = useState<UserType[]>([]);
   const [allJobRequests, setAllJobRequests] = useState<JobRequest[]>([]);
@@ -372,6 +373,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     }`}
                   >
                     Tests Paiements
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('settings')}
+                    className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                      activeTab === 'settings'
+                        ? 'border-blue-500 text-blue-400'
+                        : 'border-transparent text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 inline mr-2" />
+                    Paramètres
                   </button>
                 </div>
               </div>
@@ -1150,6 +1162,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
                 {activeTab === 'payments' && (
                   <PaymentTestPanel />
+                )}
+
+                {activeTab === 'settings' && (
+                  <AdminSettings />
                 )}
               </div>
             </div>

@@ -25,8 +25,100 @@ export interface PaymentStatus {
   message?: string;
 }
 
+export interface BankingAccount {
+  bank_name: string;
+  account_holder: string;
+  account_number: string;
+  iban: string;
+  swift_bic: string;
+  currency: string;
+}
+
+export interface PlatformCommission {
+  percentage: number;
+  enabled: boolean;
+}
+
 class PaymentService {
   private readonly apiUrl = import.meta.env.VITE_SUPABASE_URL;
+  private bankingAccountCache: BankingAccount | null = null;
+  private commissionCache: PlatformCommission | null = null;
+
+  async getBankingAccount(): Promise<BankingAccount | null> {
+    if (this.bankingAccountCache) {
+      return this.bankingAccountCache;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'banking_account')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        this.bankingAccountCache = data.setting_value as BankingAccount;
+        return this.bankingAccountCache;
+      }
+    } catch (error) {
+      console.error('Error fetching banking account:', error);
+    }
+
+    return null;
+  }
+
+  async getCommissionSettings(): Promise<PlatformCommission | null> {
+    if (this.commissionCache) {
+      return this.commissionCache;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'platform_commission')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        this.commissionCache = data.setting_value as PlatformCommission;
+        return this.commissionCache;
+      }
+    } catch (error) {
+      console.error('Error fetching commission settings:', error);
+    }
+
+    return null;
+  }
+
+  calculateAmounts(amount: number, commission?: PlatformCommission): {
+    totalAmount: number;
+    commissionAmount: number;
+    netAmount: number;
+  } {
+    if (!commission || !commission.enabled) {
+      return {
+        totalAmount: amount,
+        commissionAmount: 0,
+        netAmount: amount,
+      };
+    }
+
+    const commissionAmount = Math.round((amount * commission.percentage) / 100);
+    const netAmount = amount - commissionAmount;
+
+    return {
+      totalAmount: amount,
+      commissionAmount,
+      netAmount,
+    };
+  }
+
+  clearCache(): void {
+    this.bankingAccountCache = null;
+    this.commissionCache = null;
+  }
 
   async initiateOrangeMoneyPayment(request: PaymentRequest): Promise<PaymentResponse> {
     try {
