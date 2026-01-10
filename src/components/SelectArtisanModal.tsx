@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, CheckCircle, Clock, Phone, Mail, MapPin, Star, Award } from 'lucide-react';
+import { X, CheckCircle, Clock, Phone, Mail, MapPin, Star, Award, Navigation } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { calculateDistance, formatDistance } from '../lib/distanceUtils';
 
 interface Quote {
   id: string;
@@ -25,6 +26,8 @@ interface Artisan {
   metier: string[];
   annees_experience: number;
   photo_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface QuoteWithArtisan extends Quote {
@@ -34,6 +37,8 @@ interface QuoteWithArtisan extends Quote {
 interface SelectArtisanModalProps {
   jobId: string;
   jobTitle: string;
+  jobLatitude?: number | null;
+  jobLongitude?: number | null;
   onClose: () => void;
   onSelect: (artisanId: string, quoteId: string) => void;
 }
@@ -41,6 +46,8 @@ interface SelectArtisanModalProps {
 export default function SelectArtisanModal({
   jobId,
   jobTitle,
+  jobLatitude,
+  jobLongitude,
   onClose,
   onSelect,
 }: SelectArtisanModalProps) {
@@ -70,7 +77,7 @@ export default function SelectArtisanModal({
 
         const { data: artisansData, error: artisansError } = await supabase
           .from('artisans')
-          .select('id, nom, prenom, telephone, ville, quartier, metier, annees_experience, photo_url')
+          .select('id, nom, prenom, telephone, ville, quartier, metier, annees_experience, photo_url, latitude, longitude')
           .in('id', artisanIds);
 
         if (artisansError) throw artisansError;
@@ -276,7 +283,19 @@ export default function SelectArtisanModal({
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <MapPin className="w-4 h-4 text-blue-600" />
-                          <span>{quote.artisan.quartier}, {quote.artisan.ville}</span>
+                          <span>
+                            {quote.artisan.quartier}, {quote.artisan.ville}
+                            {jobLatitude && jobLongitude && quote.artisan.latitude && quote.artisan.longitude && (
+                              <span className="ml-1 text-blue-600 font-medium">
+                                ({formatDistance(calculateDistance(
+                                  jobLatitude,
+                                  jobLongitude,
+                                  quote.artisan.latitude,
+                                  quote.artisan.longitude
+                                ))})
+                              </span>
+                            )}
+                          </span>
                         </div>
                       </div>
 

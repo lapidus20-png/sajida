@@ -821,6 +821,8 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
         <SelectArtisanModal
           jobId={jobForArtisanSelection.id}
           jobTitle={jobForArtisanSelection.titre}
+          jobLatitude={jobForArtisanSelection.latitude}
+          jobLongitude={jobForArtisanSelection.longitude}
           onClose={() => {
             setShowSelectArtisan(false);
             setJobForArtisanSelection(null);
