@@ -8,7 +8,7 @@ import { unlockService, ClientDetails } from '../lib/unlockService';
 import NotificationList from './NotificationList';
 import WalletRecharge from './WalletRecharge';
 import { walletService, WalletBalance, WalletTransaction, APPLICATION_FEE } from '../lib/walletService';
-import { getCategoryIcon } from '../lib/jobCategories';
+import { getCategoryIcon, JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
 
 interface ArtisanDashboardProps {
   artisanId: string;
@@ -1287,14 +1287,20 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                         {isEditingProfile ? (
                           <div className="space-y-3">
                             <div className="flex gap-2">
-                              <input
-                                type="text"
+                              <select
                                 value={newMetier}
                                 onChange={(e) => setNewMetier(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleAddMetier()}
-                                placeholder="Ex: Plombier, Électricien..."
                                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                              />
+                              >
+                                <option value="">Sélectionnez un métier</option>
+                                {JOB_CATEGORY_GROUPS.map(group => (
+                                  <optgroup key={group.name} label={`${group.icon} ${group.name}`}>
+                                    {group.categories.map(cat => (
+                                      <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                  </optgroup>
+                                ))}
+                              </select>
                               <button
                                 type="button"
                                 onClick={handleAddMetier}
