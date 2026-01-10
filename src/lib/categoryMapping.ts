@@ -110,6 +110,12 @@ export const METIER_TO_CATEGORY_MAP: Record<string, string[]> = {
   'Fabricant compost': ['Fabricant compost'],
   'Déménageur artisanal': ['Déménageur artisanal'],
   'Nettoyage professionnel': ['Nettoyage professionnel'],
+  'Chauffeur': ['Chauffeur'],
+  'Livreur': ['Livreur'],
+  'Aide ménagère': ['Aide ménagère'],
+  'Agent de sécurité': ['Agent de sécurité'],
+  'Garde du corps': ['Garde du corps'],
+  'Gardien': ['Gardien'],
 };
 
 export function getJobCategoriesForMetiers(metiers: string[]): string[] {

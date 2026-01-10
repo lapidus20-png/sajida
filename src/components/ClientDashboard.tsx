@@ -5,6 +5,7 @@ import JobRequestForm from './JobRequestForm';
 import DocumentGallery from './DocumentGallery';
 import SelectArtisanModal from './SelectArtisanModal';
 import { calculateDistance, formatDistance } from '../lib/distanceUtils';
+import { getCategoryIcon } from '../lib/jobCategories';
 
 interface ClientDashboardProps {
   userId: string;
@@ -496,8 +497,13 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                           className="flex-1 cursor-pointer"
                           onClick={() => setSelectedJob(job)}
                         >
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className="font-semibold text-gray-900">{job.titre}</h3>
+                            {job.categorie && (
+                              <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                                {getCategoryIcon(job.categorie)} {job.categorie}
+                              </span>
+                            )}
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(job.statut)}`}>
                               {getStatusLabel(job.statut)}
                             </span>

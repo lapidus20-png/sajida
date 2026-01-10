@@ -62,6 +62,8 @@ export const JOB_CATEGORY_GROUPS: CategoryGroup[] = [
       'Peintre automobile',
       'Électricien auto',
       'Réparateur moteurs',
+      'Chauffeur',
+      'Livreur',
     ],
   },
   {
@@ -178,6 +180,16 @@ export const JOB_CATEGORY_GROUPS: CategoryGroup[] = [
       'Installateur antennes',
       'Installateur caméras CCTV',
       'Nettoyage professionnel',
+      'Aide ménagère',
+    ],
+  },
+  {
+    name: 'SÉCURITÉ',
+    icon: '🛡️',
+    categories: [
+      'Agent de sécurité',
+      'Garde du corps',
+      'Gardien',
     ],
   },
 ];
