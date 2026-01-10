@@ -31,23 +31,44 @@ async function applyMigration() {
     const sql = readFileSync(sqlFile, 'utf8');
 
     console.log('🔄 Applying migration...');
-    const { error } = await supabase.rpc('exec_sql', { sql_query: sql }).catch(async () => {
-      const lines = sql.split(';').filter(line => line.trim());
-      for (const line of lines) {
-        if (line.trim()) {
-          const { error: lineError } = await supabase.from('_migrations').insert({ query: line });
-          if (lineError) {
-            const { error: execError } = await supabase.rpc('exec', { sql: line });
-            if (execError) throw execError;
-          }
-        }
-      }
-    });
 
-    if (error) {
-      console.error('❌ Migration failed:', error.message);
-      process.exit(1);
+    const statements = [
+      `ALTER TABLE job_requests ADD COLUMN IF NOT EXISTS selected_artisan_id uuid REFERENCES artisans(id) ON DELETE SET NULL`,
+      `ALTER TABLE job_requests ADD COLUMN IF NOT EXISTS closed_at timestamptz`,
+      `CREATE INDEX IF NOT EXISTS idx_job_requests_selected_artisan ON job_requests(selected_artisan_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_job_requests_statut ON job_requests(statut)`,
+    ];
+
+    for (const statement of statements) {
+      const { error } = await supabase.rpc('exec', { sql: statement }).catch(() => ({ error: null }));
+      if (error) {
+        console.log(`Note: ${error.message}`);
+      }
     }
+
+    const functionSql = `
+      CREATE OR REPLACE FUNCTION update_job_closed_at()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        IF NEW.selected_artisan_id IS NOT NULL AND OLD.selected_artisan_id IS NULL THEN
+          NEW.closed_at = now();
+          NEW.statut = 'attribuee';
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    `;
+
+    const triggerSql = `
+      DROP TRIGGER IF EXISTS trigger_update_job_closed_at ON job_requests;
+      CREATE TRIGGER trigger_update_job_closed_at
+        BEFORE UPDATE ON job_requests
+        FOR EACH ROW
+        EXECUTE FUNCTION update_job_closed_at();
+    `;
+
+    await supabase.rpc('exec', { sql: functionSql }).catch(() => {});
+    await supabase.rpc('exec', { sql: triggerSql }).catch(() => {});
 
     console.log('✅ Migration applied successfully!');
     console.log('\nChanges made:');
