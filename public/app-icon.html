@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Icon - Artisan Marketplace</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .icon-container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .instructions {
+      max-width: 600px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #2563eb;
+    }
+
+    ol {
+      line-height: 1.8;
+    }
+
+    .download-btn {
+      background: linear-gradient(135deg, #2563eb 0%, #14b8a6 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .download-btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="icon-container">
+    <svg id="app-icon" width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background gradient -->
+      <defs>
+        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:1" />
+        </linearGradient>
+
+        <linearGradient id="toolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+        </linearGradient>
+
+        <!-- Shadow filter -->
+        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+        </filter>
+      </defs>
+
+      <!-- Background rounded rectangle -->
+      <rect width="512" height="512" rx="115" fill="url(#bgGradient)"/>
+
+      <!-- Decorative stars (Burkina Faso theme) -->
+      <g opacity="0.15">
+        <path d="M 100,100 L 110,130 L 140,130 L 115,150 L 125,180 L 100,160 L 75,180 L 85,150 L 60,130 L 90,130 Z" fill="white"/>
+        <path d="M 412,100 L 422,130 L 452,130 L 427,150 L 437,180 L 412,160 L 387,180 L 397,150 L 372,130 L 402,130 Z" fill="white"/>
+        <path d="M 100,412 L 110,442 L 140,442 L 115,462 L 125,492 L 100,472 L 75,492 L 85,462 L 60,442 L 90,442 Z" fill="white"/>
+      </g>
+
+      <!-- Main icon elements -->
+      <g transform="translate(256, 256)">
+        <!-- Wrench -->
+        <g transform="rotate(-45)" filter="url(#shadow)">
+          <rect x="-15" y="-90" width="30" height="120" rx="15" fill="url(#toolGradient)"/>
+          <circle cx="0" cy="-90" r="30" fill="url(#toolGradient)"/>
+          <rect x="-8" y="-110" width="16" height="20" fill="url(#toolGradient)"/>
+          <rect x="-20" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+          <rect x="8" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+        </g>
+
+        <!-- Hammer -->
+        <g transform="rotate(45)" filter="url(#shadow)">
+          <rect x="-8" y="30" width="16" height="120" rx="8" fill="#8b5cf6"/>
+          <rect x="-40" y="-10" width="80" height="40" rx="8" fill="#7c3aed"/>
+          <rect x="-35" y="-5" width="70" height="30" rx="6" fill="#8b5cf6"/>
+        </g>
+
+        <!-- Central badge/shield -->
+        <g filter="url(#shadow)">
+          <circle cx="0" cy="0" r="45" fill="white"/>
+          <path d="M 0,-25 L 15,0 L 0,25 L -15,0 Z" fill="#2563eb"/>
+          <circle cx="0" cy="0" r="10" fill="#fbbf24"/>
+        </g>
+      </g>
+
+      <!-- Bottom accent -->
+      <path d="M 0,450 Q 256,470 512,450 L 512,512 L 0,512 Z" fill="black" opacity="0.1"/>
+    </svg>
+  </div>
+
+  <div class="instructions">
+    <h2>📱 App Icon for Google Play Console</h2>
+    <p><strong>Icon Size:</strong> 512 x 512 pixels</p>
+
+    <h3>How to Export:</h3>
+    <ol>
+      <li><strong>Option 1 - Screenshot:</strong>
+        <ul>
+          <li>Right-click on the icon above</li>
+          <li>Select "Inspect" or "Inspect Element"</li>
+          <li>Right-click on the &lt;svg&gt; element in the inspector</li>
+          <li>Select "Copy" → "Copy element"</li>
+          <li>Paste into an SVG editor like Inkscape or Figma</li>
+          <li>Export as PNG at 512x512px</li>
+        </ul>
+      </li>
+
+      <li><strong>Option 2 - Online Tool:</strong>
+        <ul>
+          <li>Use <a href="https://cloudconvert.com/svg-to-png" target="_blank">CloudConvert</a></li>
+          <li>Right-click the icon → "Save as SVG"</li>
+          <li>Upload to CloudConvert</li>
+          <li>Set dimensions to 512x512</li>
+          <li>Convert to PNG</li>
+        </ul>
+      </li>
+
+      <li><strong>Option 3 - Browser Dev Tools:</strong>
+        <ul>
+          <li>Open browser console (F12)</li>
+          <li>Paste the download script (see below)</li>
+          <li>Press Enter to download PNG</li>
+        </ul>
+      </li>
+    </ol>
+
+    <button class="download-btn" onclick="downloadIcon()">Download as PNG (512x512)</button>
+
+    <h3>📋 Google Play Requirements:</h3>
+    <ul>
+      <li>✓ 32-bit PNG (with alpha)</li>
+      <li>✓ 512 x 512 pixels</li>
+      <li>✓ Maximum 1024 KB</li>
+      <li>✓ Full bleed (no transparent corners)</li>
+    </ul>
+
+    <h3>🎨 Design Notes:</h3>
+    <p>This icon represents your artisan marketplace with:</p>
+    <ul>
+      <li>🔧 <strong>Wrench:</strong> Represents artisan tools and services</li>
+      <li>🔨 <strong>Hammer:</strong> Symbolizes construction and craftsmanship</li>
+      <li>⭐ <strong>Central Star:</strong> Excellence and quality service</li>
+      <li>🌊 <strong>Blue-Teal Gradient:</strong> Matches your app's brand colors</li>
+      <li>✨ <strong>Gold Accents:</strong> Premium service quality</li>
+      <li>⭐ <strong>Background Stars:</strong> Burkina Faso theme</li>
+    </ul>
+  </div>
+
+  <script>
+    function downloadIcon() {
+      const svg = document.getElementById('app-icon');
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+
+      img.onload = function() {
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(function(blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = 'artisan-marketplace-icon-512x512.png';
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+        });
+      };
+
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    }
+  </script>
+</body>
+</html>

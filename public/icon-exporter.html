@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Exporter - All Sizes</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #2563eb;
+      margin-top: 0;
+      font-size: 32px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .preview-item {
+      text-align: center;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+    }
+
+    .preview-item:hover {
+      border-color: #2563eb;
+      transform: translateY(-2px);
+      transition: all 0.2s;
+    }
+
+    .preview-item img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .preview-label {
+      margin-top: 10px;
+      font-weight: 600;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    .preview-size {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 30px 0;
+    }
+
+    button {
+      background: linear-gradient(135deg, #2563eb 0%, #14b8a6 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .secondary-btn {
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    }
+
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .success-message {
+      background: #d1fae5;
+      border-left: 4px solid #10b981;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Icon Exporter - All Sizes</h1>
+    <p>Export your app icon in all required sizes for Google Play Console and Android development.</p>
+
+    <div class="info-box">
+      <strong>📱 Included Sizes:</strong>
+      <ul>
+        <li><strong>512x512</strong> - Google Play Console (required)</li>
+        <li><strong>192x192</strong> - xxxhdpi Android density</li>
+        <li><strong>144x144</strong> - xxhdpi Android density</li>
+        <li><strong>96x96</strong> - xhdpi Android density</li>
+        <li><strong>72x72</strong> - hdpi Android density</li>
+        <li><strong>48x48</strong> - mdpi Android density</li>
+      </ul>
+    </div>
+
+    <div class="action-buttons">
+      <button onclick="downloadAllSizes()">📦 Download All Sizes (ZIP)</button>
+      <button onclick="downloadPlayStoreIcon()" class="secondary-btn">⭐ Download 512x512 Only</button>
+      <button onclick="showPreviews()" class="secondary-btn">👁️ Show Previews</button>
+    </div>
+
+    <div class="success-message" id="successMessage">
+      ✅ Icons generated successfully! Check your downloads folder.
+    </div>
+
+    <div class="preview-grid hidden" id="previewGrid"></div>
+
+    <canvas id="canvas" class="hidden"></canvas>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <script>
+    const iconSizes = [
+      { size: 512, name: 'app-icon-512', label: 'Play Store', density: 'xxxhdpi' },
+      { size: 192, name: 'app-icon-192', label: 'xxxhdpi', density: 'xxxhdpi' },
+      { size: 144, name: 'app-icon-144', label: 'xxhdpi', density: 'xxhdpi' },
+      { size: 96, name: 'app-icon-96', label: 'xhdpi', density: 'xhdpi' },
+      { size: 72, name: 'app-icon-72', label: 'hdpi', density: 'hdpi' },
+      { size: 48, name: 'app-icon-48', label: 'mdpi', density: 'mdpi' }
+    ];
+
+    function createIconSVG() {
+      return `
+        <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:1" />
+            </linearGradient>
+            <linearGradient id="toolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" rx="115" fill="url(#bgGradient)"/>
+          <g opacity="0.15">
+            <path d="M 100,100 L 110,130 L 140,130 L 115,150 L 125,180 L 100,160 L 75,180 L 85,150 L 60,130 L 90,130 Z" fill="white"/>
+            <path d="M 412,100 L 422,130 L 452,130 L 427,150 L 437,180 L 412,160 L 387,180 L 397,150 L 372,130 L 402,130 Z" fill="white"/>
+            <path d="M 100,412 L 110,442 L 140,442 L 115,462 L 125,492 L 100,472 L 75,492 L 85,462 L 60,442 L 90,442 Z" fill="white"/>
+          </g>
+          <g transform="translate(256, 256)">
+            <g transform="rotate(-45)">
+              <rect x="-15" y="-90" width="30" height="120" rx="15" fill="url(#toolGradient)"/>
+              <circle cx="0" cy="-90" r="30" fill="url(#toolGradient)"/>
+              <rect x="-8" y="-110" width="16" height="20" fill="url(#toolGradient)"/>
+              <rect x="-20" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+              <rect x="8" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+            </g>
+            <g transform="rotate(45)">
+              <rect x="-8" y="30" width="16" height="120" rx="8" fill="#8b5cf6"/>
+              <rect x="-40" y="-10" width="80" height="40" rx="8" fill="#7c3aed"/>
+              <rect x="-35" y="-5" width="70" height="30" rx="6" fill="#8b5cf6"/>
+            </g>
+            <g>
+              <circle cx="0" cy="0" r="45" fill="white"/>
+              <path d="M 0,-25 L 15,0 L 0,25 L -15,0 Z" fill="#2563eb"/>
+              <circle cx="0" cy="0" r="10" fill="#fbbf24"/>
+            </g>
+          </g>
+          <path d="M 0,450 Q 256,470 512,450 L 512,512 L 0,512 Z" fill="black" opacity="0.1"/>
+        </svg>
+      `;
+    }
+
+    async function generateIcon(size) {
+      return new Promise((resolve) => {
+        const canvas = document.getElementById('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        const svgData = createIconSVG();
+        const img = new Image();
+
+        img.onload = function() {
+          ctx.clearRect(0, 0, size, size);
+          ctx.drawImage(img, 0, 0, size, size);
+          canvas.toBlob((blob) => resolve(blob));
+        };
+
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+      });
+    }
+
+    async function downloadAllSizes() {
+      if (typeof JSZip === 'undefined') {
+        alert('Loading library... Please wait a moment and try again.');
+        return;
+      }
+
+      const zip = new JSZip();
+      const folder = zip.folder('app-icons');
+
+      for (const iconSize of iconSizes) {
+        const blob = await generateIcon(iconSize.size);
+        folder.file(`${iconSize.name}.png`, blob);
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, 'artisan-marketplace-icons.zip');
+
+      showSuccess();
+    }
+
+    async function downloadPlayStoreIcon() {
+      const blob = await generateIcon(512);
+      saveAs(blob, 'artisan-marketplace-icon-512x512.png');
+      showSuccess();
+    }
+
+    async function showPreviews() {
+      const grid = document.getElementById('previewGrid');
+      grid.innerHTML = '';
+      grid.classList.remove('hidden');
+
+      for (const iconSize of iconSizes) {
+        const blob = await generateIcon(iconSize.size);
+        const url = URL.createObjectURL(blob);
+
+        const div = document.createElement('div');
+        div.className = 'preview-item';
+        div.innerHTML = `
+          <img src="${url}" alt="${iconSize.label}">
+          <div class="preview-label">${iconSize.label}</div>
+          <div class="preview-size">${iconSize.size}x${iconSize.size}px</div>
+        `;
+
+        grid.appendChild(div);
+      }
+    }
+
+    function showSuccess() {
+      const msg = document.getElementById('successMessage');
+      msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>
