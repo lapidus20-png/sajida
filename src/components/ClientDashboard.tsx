@@ -19,6 +19,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
   const [showSelectArtisan, setShowSelectArtisan] = useState(false);
   const [jobForArtisanSelection, setJobForArtisanSelection] = useState<JobRequest | null>(null);
+  const [jobSelections, setJobSelections] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     if (userId === 'demo') {
@@ -131,8 +132,43 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
 
         if (quotesError) throw quotesError;
         setQuotes(quotesData || []);
+
+        const { data: selectionsData, error: selectionsError } = await supabase
+          .from('job_artisan_selections')
+          .select(`
+            id,
+            job_request_id,
+            artisan_id,
+            quote_id,
+            selection_order,
+            selected_at,
+            artisans (
+              id,
+              nom,
+              prenom,
+              telephone,
+              ville,
+              quartier,
+              metier,
+              photo_url
+            )
+          `)
+          .in('job_request_id', jobIds)
+          .order('selection_order', { ascending: true });
+
+        if (!selectionsError && selectionsData) {
+          const selectionsByJob: Record<string, any[]> = {};
+          selectionsData.forEach(sel => {
+            if (!selectionsByJob[sel.job_request_id]) {
+              selectionsByJob[sel.job_request_id] = [];
+            }
+            selectionsByJob[sel.job_request_id].push(sel);
+          });
+          setJobSelections(selectionsByJob);
+        }
       } else {
         setQuotes([]);
+        setJobSelections({});
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -395,6 +431,42 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                             <span>💰 {job.budget_max ? job.budget_max.toLocaleString() : '0'} FCFA</span>
                             <span>📅 {new Date(job.created_at).toLocaleDateString('fr-FR')}</span>
                           </div>
+                          {jobSelections[job.id] && jobSelections[job.id].length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <p className="text-sm font-medium text-gray-700 mb-2">
+                                Artisan{jobSelections[job.id].length > 1 ? 's' : ''} sélectionné{jobSelections[job.id].length > 1 ? 's' : ''} :
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {jobSelections[job.id].map((selection, idx) => {
+                                  const artisan = selection.artisans;
+                                  const labels = ['1er choix', '2e choix', '3e choix'];
+                                  return (
+                                    <div key={selection.id} className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                                      <div className="flex items-center gap-2">
+                                        {artisan.photo_url ? (
+                                          <img
+                                            src={artisan.photo_url}
+                                            alt={`${artisan.prenom} ${artisan.nom}`}
+                                            className="w-8 h-8 rounded-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center text-white text-xs font-bold">
+                                            {artisan.prenom[0]}{artisan.nom[0]}
+                                          </div>
+                                        )}
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-900">
+                                            {artisan.prenom} {artisan.nom}
+                                          </p>
+                                          <p className="text-xs text-gray-600">{labels[selection.selection_order - 1]}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col items-end gap-3">
                           <div className="text-right">

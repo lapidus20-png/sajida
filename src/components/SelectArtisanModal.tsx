@@ -46,7 +46,8 @@ export default function SelectArtisanModal({
 }: SelectArtisanModalProps) {
   const [quotes, setQuotes] = useState<QuoteWithArtisan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [selectedQuoteIds, setSelectedQuoteIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadQuotes();
@@ -108,13 +109,50 @@ export default function SelectArtisanModal({
     }
   };
 
-  const handleSelectArtisan = async () => {
-    if (!selectedQuoteId) return;
+  const toggleQuoteSelection = (quoteId: string) => {
+    setSelectedQuoteIds(prev => {
+      if (prev.includes(quoteId)) {
+        return prev.filter(id => id !== quoteId);
+      } else if (prev.length < 3) {
+        return [...prev, quoteId];
+      }
+      return prev;
+    });
+  };
 
-    const selectedQuote = quotes.find(q => q.id === selectedQuoteId);
-    if (!selectedQuote) return;
+  const handleSelectArtisans = async () => {
+    if (selectedQuoteIds.length === 0) return;
 
-    onSelect(selectedQuote.artisan_id, selectedQuoteId);
+    try {
+      setSaving(true);
+
+      for (let i = 0; i < selectedQuoteIds.length; i++) {
+        const quoteId = selectedQuoteIds[i];
+        const selectedQuote = quotes.find(q => q.id === quoteId);
+        if (!selectedQuote) continue;
+
+        const { error } = await supabase
+          .from('job_artisan_selections')
+          .insert({
+            job_request_id: jobId,
+            artisan_id: selectedQuote.artisan_id,
+            quote_id: quoteId,
+            selection_order: i + 1,
+          });
+
+        if (error) {
+          console.error('Error selecting artisan:', error);
+          throw error;
+        }
+      }
+
+      onSelect(quotes.find(q => q.id === selectedQuoteIds[0])!.artisan_id, selectedQuoteIds[0]);
+    } catch (error) {
+      console.error('Error selecting artisans:', error);
+      alert('Une erreur est survenue lors de la sélection des artisans');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -162,17 +200,24 @@ export default function SelectArtisanModal({
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-blue-900">
                   <strong className="font-semibold">{quotes.length} artisan{quotes.length > 1 ? 's ont postulé' : ' a postulé'}</strong> pour votre projet.
-                  Sélectionnez celui que vous souhaitez engager pour clôturer cette demande.
+                  Vous pouvez sélectionner jusqu'à 3 artisans. {selectedQuoteIds.length > 0 && `(${selectedQuoteIds.length}/3 sélectionné${selectedQuoteIds.length > 1 ? 's' : ''})`}
                 </p>
               </div>
 
-              {quotes.map((quote) => (
+              {quotes.map((quote) => {
+                const isSelected = selectedQuoteIds.includes(quote.id);
+                const selectionIndex = selectedQuoteIds.indexOf(quote.id);
+                const selectionLabels = ['1er choix', '2e choix', '3e choix'];
+
+                return (
                 <div
                   key={quote.id}
-                  onClick={() => setSelectedQuoteId(quote.id)}
+                  onClick={() => toggleQuoteSelection(quote.id)}
                   className={`border-2 rounded-xl p-5 cursor-pointer transition-all ${
-                    selectedQuoteId === quote.id
+                    isSelected
                       ? 'border-blue-500 bg-blue-50 shadow-md'
+                      : selectedQuoteIds.length >= 3
+                      ? 'border-gray-200 opacity-50 cursor-not-allowed'
                       : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                   }`}
                 >
@@ -211,10 +256,13 @@ export default function SelectArtisanModal({
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end gap-2">
                           {getStatusBadge(quote.statut)}
-                          {selectedQuoteId === quote.id && (
-                            <div className="mt-2">
+                          {isSelected && (
+                            <div className="flex items-center gap-2">
+                              <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
+                                {selectionLabels[selectionIndex]}
+                              </span>
                               <CheckCircle className="w-6 h-6 text-blue-600" />
                             </div>
                           )}
@@ -286,7 +334,8 @@ export default function SelectArtisanModal({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -301,12 +350,21 @@ export default function SelectArtisanModal({
                 Annuler
               </button>
               <button
-                onClick={handleSelectArtisan}
-                disabled={!selectedQuoteId}
+                onClick={handleSelectArtisans}
+                disabled={selectedQuoteIds.length === 0 || saving}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-medium rounded-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <CheckCircle className="w-5 h-5" />
-                Sélectionner cet artisan
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Sélection en cours...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    Sélectionner {selectedQuoteIds.length > 1 ? `ces ${selectedQuoteIds.length} artisans` : 'cet artisan'}
+                  </>
+                )}
               </button>
             </div>
           )}
