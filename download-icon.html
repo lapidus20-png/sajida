@@ -220,13 +220,15 @@
 
   <script>
     function downloadIcon() {
-      const svg = document.getElementById('app-icon');
+      const btn = document.querySelector('.download-btn');
+      btn.textContent = '⏳ Generating...';
+      btn.disabled = true;
+
       const canvas = document.getElementById('canvas');
       canvas.width = 512;
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Get the full SVG with proper viewBox
       const svgString = `
         <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -271,42 +273,55 @@
       const img = new Image();
 
       img.onload = function() {
-        // Clear canvas with white background
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, 512, 512);
+        try {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, 512, 512);
+          ctx.drawImage(img, 0, 0, 512, 512);
 
-        // Draw the icon
-        ctx.drawImage(img, 0, 0, 512, 512);
+          canvas.toBlob(function(blob) {
+            if (!blob) {
+              throw new Error('Failed to create blob');
+            }
 
-        // Convert to blob and download
-        canvas.toBlob(function(blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.download = 'artisan-marketplace-icon-512x512.png';
-          link.href = url;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'artisan-marketplace-icon-512x512.png';
+            link.href = url;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
 
-          // Show success message
-          const success = document.getElementById('success');
-          success.classList.add('show');
-          setTimeout(() => success.classList.remove('show'), 4000);
-        }, 'image/png');
+            setTimeout(() => {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }, 100);
+
+            const success = document.getElementById('success');
+            success.classList.add('show');
+            btn.textContent = '⬇️ Download Icon (512x512)';
+            btn.disabled = false;
+
+            setTimeout(() => success.classList.remove('show'), 4000);
+          }, 'image/png', 1.0);
+        } catch (error) {
+          console.error('Download error:', error);
+          alert('Download failed: ' + error.message);
+          btn.textContent = '⬇️ Download Icon (512x512)';
+          btn.disabled = false;
+        }
       };
 
-      img.onerror = function() {
-        alert('Error generating icon. Please try again.');
+      img.onerror = function(error) {
+        console.error('Image load error:', error);
+        alert('Failed to generate icon. Please refresh and try again.');
+        btn.textContent = '⬇️ Download Icon (512x512)';
+        btn.disabled = false;
       };
 
-      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+      const blob = new Blob([svgString], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      img.src = url;
     }
-
-    // Auto-trigger download when page loads
-    window.addEventListener('load', function() {
-      console.log('Page loaded. Click the button to download your icon!');
-    });
   </script>
 </body>
 </html>
