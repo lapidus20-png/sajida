@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LogIn, UserPlus, Mail, Lock, Phone, MapPin, AlertCircle, Eye, Wrench, Hammer, Droplet, Leaf, Zap, Paintbrush } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ClientDashboard from './ClientDashboard';
+import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
 
 interface AuthPageProps {
   onSuccess: () => void;
@@ -332,18 +333,13 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                       >
                         <option value="">Sélectionnez votre métier</option>
-                        <option value="Plombier">Plombier</option>
-                        <option value="Électricien">Électricien</option>
-                        <option value="Maçon">Maçon</option>
-                        <option value="Menuisier">Menuisier</option>
-                        <option value="Peintre">Peintre</option>
-                        <option value="Carreleur">Carreleur</option>
-                        <option value="Jardinier">Jardinier</option>
-                        <option value="Mécanicien">Mécanicien</option>
-                        <option value="Soudeur">Soudeur</option>
-                        <option value="Couturier">Couturier</option>
-                        <option value="Coiffeur">Coiffeur</option>
-                        <option value="Autre">Autre</option>
+                        {JOB_CATEGORY_GROUPS.map(group => (
+                          <optgroup key={group.name} label={`${group.icon} ${group.name}`}>
+                            {group.categories.map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </optgroup>
+                        ))}
                       </select>
                     </div>
                   )}
