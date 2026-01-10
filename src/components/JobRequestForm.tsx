@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle, Plus, X, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import GoogleMapPicker from './GoogleMapPicker';
+import UnifiedLocationPicker from './UnifiedLocationPicker';
 
 interface JobRequestFormProps {
   clientId: string;
@@ -303,7 +303,7 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
       </div>
 
       {showLocationPicker && (
-        <GoogleMapPicker
+        <UnifiedLocationPicker
           initialLat={location?.lat}
           initialLng={location?.lng}
           onLocationSelect={(lat, lng, address) => {

@@ -1,7 +1,7 @@
 import { X, Briefcase, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import GoogleMapPicker from './GoogleMapPicker';
+import UnifiedLocationPicker from './UnifiedLocationPicker';
 import FileUpload from './FileUpload';
 import { UploadResult } from '../lib/storageService';
 
@@ -446,7 +446,7 @@ export default function AddArtisanModal({ onClose, onSuccess }: AddArtisanModalP
       </div>
 
       {showLocationPicker && (
-        <GoogleMapPicker
+        <UnifiedLocationPicker
           initialLat={location?.lat}
           initialLng={location?.lng}
           onLocationSelect={(lat, lng, address) => {
