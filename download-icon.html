@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download App Icon - 512x512</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 48px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    h1 {
+      color: #1e293b;
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 18px;
+      margin-bottom: 32px;
+    }
+
+    .icon-preview {
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 32px;
+      display: inline-block;
+    }
+
+    .download-btn {
+      background: linear-gradient(135deg, #2563eb 0%, #14b8a6 100%);
+      color: white;
+      border: none;
+      padding: 18px 48px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+    }
+
+    .download-btn:active {
+      transform: translateY(0);
+    }
+
+    .success {
+      background: #10b981;
+      padding: 16px;
+      border-radius: 8px;
+      color: white;
+      margin-top: 24px;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+
+    .success.show {
+      display: block;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .info {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 32px;
+      text-align: left;
+    }
+
+    .info h3 {
+      color: #1e40af;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .info ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .info li {
+      color: #475569;
+      margin: 8px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+
+    .info li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #10b981;
+      font-weight: bold;
+    }
+
+    canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📱 App Icon Download</h1>
+    <p class="subtitle">512x512 PNG for Google Play Console</p>
+
+    <div class="icon-preview">
+      <svg id="app-icon" width="256" height="256" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:1" />
+          </linearGradient>
+          <linearGradient id="toolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+
+        <!-- Background -->
+        <rect width="512" height="512" rx="115" fill="url(#bgGradient)"/>
+
+        <!-- Decorative stars -->
+        <g opacity="0.15">
+          <path d="M 100,100 L 110,130 L 140,130 L 115,150 L 125,180 L 100,160 L 75,180 L 85,150 L 60,130 L 90,130 Z" fill="white"/>
+          <path d="M 412,100 L 422,130 L 452,130 L 427,150 L 437,180 L 412,160 L 387,180 L 397,150 L 372,130 L 402,130 Z" fill="white"/>
+          <path d="M 100,412 L 110,442 L 140,442 L 115,462 L 125,492 L 100,472 L 75,492 L 85,462 L 60,442 L 90,442 Z" fill="white"/>
+        </g>
+
+        <!-- Tools -->
+        <g transform="translate(256, 256)">
+          <!-- Wrench -->
+          <g transform="rotate(-45)">
+            <rect x="-15" y="-90" width="30" height="120" rx="15" fill="url(#toolGradient)"/>
+            <circle cx="0" cy="-90" r="30" fill="url(#toolGradient)"/>
+            <rect x="-8" y="-110" width="16" height="20" fill="url(#toolGradient)"/>
+            <rect x="-20" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+            <rect x="8" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+          </g>
+
+          <!-- Hammer -->
+          <g transform="rotate(45)">
+            <rect x="-8" y="30" width="16" height="120" rx="8" fill="#8b5cf6"/>
+            <rect x="-40" y="-10" width="80" height="40" rx="8" fill="#7c3aed"/>
+            <rect x="-35" y="-5" width="70" height="30" rx="6" fill="#8b5cf6"/>
+          </g>
+
+          <!-- Star badge -->
+          <g>
+            <circle cx="0" cy="0" r="45" fill="white"/>
+            <path d="M 0,-25 L 15,0 L 0,25 L -15,0 Z" fill="#2563eb"/>
+            <circle cx="0" cy="0" r="10" fill="#fbbf24"/>
+          </g>
+        </g>
+
+        <!-- Bottom shadow -->
+        <path d="M 0,450 Q 256,470 512,450 L 512,512 L 0,512 Z" fill="black" opacity="0.1"/>
+      </svg>
+    </div>
+
+    <button class="download-btn" onclick="downloadIcon()">
+      ⬇️ Download Icon (512x512)
+    </button>
+
+    <div class="success" id="success">
+      ✅ Icon downloaded successfully! Check your Downloads folder.
+    </div>
+
+    <div class="info">
+      <h3>📋 What you'll get:</h3>
+      <ul>
+        <li>512 x 512 pixels PNG file</li>
+        <li>High quality, ready for Google Play</li>
+        <li>Professional design with your brand colors</li>
+        <li>Instant download, no sign-up required</li>
+      </ul>
+    </div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    function downloadIcon() {
+      const svg = document.getElementById('app-icon');
+      const canvas = document.getElementById('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      // Get the full SVG with proper viewBox
+      const svgString = `
+        <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#14b8a6;stop-opacity:1" />
+            </linearGradient>
+            <linearGradient id="toolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" rx="115" fill="url(#bgGradient)"/>
+          <g opacity="0.15">
+            <path d="M 100,100 L 110,130 L 140,130 L 115,150 L 125,180 L 100,160 L 75,180 L 85,150 L 60,130 L 90,130 Z" fill="white"/>
+            <path d="M 412,100 L 422,130 L 452,130 L 427,150 L 437,180 L 412,160 L 387,180 L 397,150 L 372,130 L 402,130 Z" fill="white"/>
+            <path d="M 100,412 L 110,442 L 140,442 L 115,462 L 125,492 L 100,472 L 75,492 L 85,462 L 60,442 L 90,442 Z" fill="white"/>
+          </g>
+          <g transform="translate(256, 256)">
+            <g transform="rotate(-45)">
+              <rect x="-15" y="-90" width="30" height="120" rx="15" fill="url(#toolGradient)"/>
+              <circle cx="0" cy="-90" r="30" fill="url(#toolGradient)"/>
+              <rect x="-8" y="-110" width="16" height="20" fill="url(#toolGradient)"/>
+              <rect x="-20" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+              <rect x="8" y="-110" width="12" height="15" fill="url(#toolGradient)"/>
+            </g>
+            <g transform="rotate(45)">
+              <rect x="-8" y="30" width="16" height="120" rx="8" fill="#8b5cf6"/>
+              <rect x="-40" y="-10" width="80" height="40" rx="8" fill="#7c3aed"/>
+              <rect x="-35" y="-5" width="70" height="30" rx="6" fill="#8b5cf6"/>
+            </g>
+            <g>
+              <circle cx="0" cy="0" r="45" fill="white"/>
+              <path d="M 0,-25 L 15,0 L 0,25 L -15,0 Z" fill="#2563eb"/>
+              <circle cx="0" cy="0" r="10" fill="#fbbf24"/>
+            </g>
+          </g>
+          <path d="M 0,450 Q 256,470 512,450 L 512,512 L 0,512 Z" fill="black" opacity="0.1"/>
+        </svg>
+      `;
+
+      const img = new Image();
+
+      img.onload = function() {
+        // Clear canvas with white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Draw the icon
+        ctx.drawImage(img, 0, 0, 512, 512);
+
+        // Convert to blob and download
+        canvas.toBlob(function(blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = 'artisan-marketplace-icon-512x512.png';
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+
+          // Show success message
+          const success = document.getElementById('success');
+          success.classList.add('show');
+          setTimeout(() => success.classList.remove('show'), 4000);
+        }, 'image/png');
+      };
+
+      img.onerror = function() {
+        alert('Error generating icon. Please try again.');
+      };
+
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+    }
+
+    // Auto-trigger download when page loads
+    window.addEventListener('load', function() {
+      console.log('Page loaded. Click the button to download your icon!');
+    });
+  </script>
+</body>
+</html>
