@@ -4,81 +4,12 @@ import { supabase } from '../lib/supabase';
 import UnifiedLocationPicker from './UnifiedLocationPicker';
 import FileUpload from './FileUpload';
 import { UploadResult } from '../lib/storageService';
+import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
 
 interface AddArtisanModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
-
-export const METIERS = [
-  'Plombier',
-  'Électricien',
-  'Maçon',
-  'Menuisier',
-  'Menuisier métallique',
-  'Peintre',
-  'Peintre bâtiment',
-  'Mécanicien auto',
-  'Mécanicien moto',
-  'Mécanicien diesel',
-  'Soudeur',
-  'Carreleur',
-  'Couturier',
-  'Couturière',
-  'Coiffeur',
-  'Coiffeuse',
-  'Réparateur téléphone',
-  'Réparateur ordinateur',
-  'Électronicien',
-  'Forgeron',
-  'Charpentier',
-  'Ébéniste',
-  'Tapissier',
-  'Vitrier',
-  'Jardinier',
-  'Maraîcher',
-  'Éleveur',
-  'Photographe',
-  'Vidéaste',
-  'Graphiste',
-  'Imprimeur',
-  'Cordonnier',
-  'Tailleur',
-  'Bijoutier',
-  'Bijoutier traditionnel',
-  'Potier',
-  'Tisserand',
-  'Teinturier',
-  'Ferblantier',
-  'Climatiseur',
-  'Frigoriste',
-  'Installateur satellite',
-  'Installateur panneaux solaires',
-  'Serrurier',
-  'Forgeron d\'art',
-  'Sculpteur',
-  'Décorateur',
-  'Maroquinier',
-  'Boulanger',
-  'Pâtissier',
-  'Boucher',
-  'Poissonnier',
-  'Traiteur',
-  'Restaurateur',
-  'Barbier',
-  'Esthéticienne',
-  'Manucure',
-  'Tresseuse',
-  'Laveur auto',
-  'Dépanneur',
-  'Chauffeur',
-  'Livreur',
-  'Déménageur',
-  'Nettoyeur',
-  'Agent de sécurité',
-  'Gardien',
-  'Autre'
-];
 
 const VILLES = [
   'Ouagadougou',
@@ -288,8 +219,12 @@ export default function AddArtisanModal({ onClose, onSuccess }: AddArtisanModalP
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   >
                     <option value="">Sélectionnez un métier</option>
-                    {METIERS.map(metier => (
-                      <option key={metier} value={metier}>{metier}</option>
+                    {JOB_CATEGORY_GROUPS.map(group => (
+                      <optgroup key={group.name} label={`${group.icon} ${group.name}`}>
+                        {group.categories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                   <button

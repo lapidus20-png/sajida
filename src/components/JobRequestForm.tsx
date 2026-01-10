@@ -2,27 +2,13 @@ import { useState } from 'react';
 import { AlertCircle, Plus, X, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import UnifiedLocationPicker from './UnifiedLocationPicker';
+import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
 
 interface JobRequestFormProps {
   clientId: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
-
-const CATEGORIES = [
-  'Plomberie',
-  'Électricité',
-  'Peinture',
-  'Menuiserie',
-  'Maçonnerie',
-  'Chauffage',
-  'Isolation',
-  'Toiture',
-  'Carrelage',
-  'Vitrage',
-  'Jardinage',
-  'Autre',
-];
 
 export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobRequestFormProps) {
   const [loading, setLoading] = useState(false);
@@ -132,8 +118,12 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Sélectionner une catégorie</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {JOB_CATEGORY_GROUPS.map(group => (
+                  <optgroup key={group.name} label={`${group.icon} ${group.name}`}>
+                    {group.categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
