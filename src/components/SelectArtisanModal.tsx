@@ -74,10 +74,30 @@ export default function SelectArtisanModal({
 
         if (artisansError) throw artisansError;
 
-        const quotesWithArtisans = quotesData.map(quote => ({
-          ...quote,
-          artisan: artisansData.find(a => a.id === quote.artisan_id)!,
-        }));
+        const quotesWithArtisans = quotesData.map(quote => {
+          const artisan = artisansData.find(a => a.id === quote.artisan_id)!;
+
+          let metierArray: string[] = [];
+          if (artisan.metier) {
+            if (Array.isArray(artisan.metier)) {
+              metierArray = artisan.metier;
+            } else if (typeof artisan.metier === 'string') {
+              try {
+                metierArray = JSON.parse(artisan.metier);
+              } catch {
+                metierArray = [artisan.metier];
+              }
+            }
+          }
+
+          return {
+            ...quote,
+            artisan: {
+              ...artisan,
+              metier: metierArray,
+            },
+          };
+        });
 
         setQuotes(quotesWithArtisans);
       }
@@ -178,11 +198,17 @@ export default function SelectArtisanModal({
                             {quote.artisan.prenom} {quote.artisan.nom}
                           </h3>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {quote.artisan.metier.slice(0, 3).map((m, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">
-                                {m}
+                            {Array.isArray(quote.artisan.metier) && quote.artisan.metier.length > 0 ? (
+                              quote.artisan.metier.slice(0, 3).map((m, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">
+                                  {m}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                Artisan
                               </span>
-                            ))}
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
