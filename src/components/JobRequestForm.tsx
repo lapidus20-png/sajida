@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AlertCircle, Plus, X, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import UnifiedLocationPicker from './UnifiedLocationPicker';
+import MultiFileUpload from './MultiFileUpload';
 import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
 
 interface JobRequestFormProps {
@@ -32,14 +33,8 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddImage = (url: string) => {
-    if (url && !images.includes(url)) {
-      setImages([...images, url]);
-    }
-  };
-
-  const handleRemoveImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+  const handleFilesChange = (urls: string[]) => {
+    setImages(urls);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -227,50 +222,12 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Photos/Pièces jointes</label>
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                id="image-input"
-                placeholder="URL de l'image"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById('image-input') as HTMLInputElement;
-                  if (input?.value) {
-                    handleAddImage(input.value);
-                    input.value = '';
-                  }
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Ajouter
-              </button>
-            </div>
-
-            {images.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {images.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={image}
-                      alt={`Image ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <MultiFileUpload
+              userId={clientId}
+              onFilesChange={handleFilesChange}
+              maxFiles={5}
+              label="Photos/Documents"
+            />
           </div>
 
           <div className="flex gap-3 pt-4">

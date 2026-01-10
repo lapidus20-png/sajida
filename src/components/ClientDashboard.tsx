@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen, Send, EyeOff, Users, MapPin } from 'lucide-react';
-import { supabase, JobRequest, Quote } from '../lib/supabase';
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen, Send, EyeOff, Users, MapPin, Star } from 'lucide-react';
+import { supabase, JobRequest, Quote, Contract } from '../lib/supabase';
 import JobRequestForm from './JobRequestForm';
 import DocumentGallery from './DocumentGallery';
 import SelectArtisanModal from './SelectArtisanModal';
+import ReviewSystem from './ReviewSystem';
 import { calculateDistance, formatDistance } from '../lib/distanceUtils';
 import { getCategoryIcon } from '../lib/jobCategories';
 
@@ -15,13 +16,17 @@ interface ClientDashboardProps {
 export default function ClientDashboard({ userId, onLogout }: ClientDashboardProps) {
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateJob, setShowCreateJob] = useState(false);
-  const [activeTab, setActiveTab] = useState<'demandes' | 'devis' | 'documents' | 'stats'>('demandes');
+  const [activeTab, setActiveTab] = useState<'demandes' | 'devis' | 'documents' | 'stats' | 'reviews'>('demandes');
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
   const [showSelectArtisan, setShowSelectArtisan] = useState(false);
   const [jobForArtisanSelection, setJobForArtisanSelection] = useState<JobRequest | null>(null);
   const [jobSelections, setJobSelections] = useState<Record<string, any[]>>({});
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [reviewedArtisan, setReviewedArtisan] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (userId === 'demo') {
@@ -244,9 +249,20 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           });
           setJobSelections(selectionsByJob);
         }
+
+        const { data: contractsData, error: contractsError } = await supabase
+          .from('contracts')
+          .select('*')
+          .eq('client_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (!contractsError) {
+          setContracts(contractsData || []);
+        }
       } else {
         setQuotes([]);
         setJobSelections({});
+        setContracts([]);
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -463,6 +479,17 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                 }`}
               >
                 Statistiques
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`flex-1 sm:flex-none px-6 py-4 font-medium border-b-2 transition-colors ${
+                  activeTab === 'reviews'
+                    ? 'border-yellow-500 text-yellow-500'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Star className="w-4 h-4 inline mr-2" />
+                Avis
               </button>
             </div>
           </div>
@@ -765,6 +792,65 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
               )
             ) : activeTab === 'documents' ? (
               <DocumentGallery userId={userId} />
+            ) : activeTab === 'reviews' ? (
+              contracts.length === 0 ? (
+                <div className="text-center py-12">
+                  <Star className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Aucun projet terminé pour le moment</p>
+                  <p className="text-sm text-gray-500 mt-2">Vous pourrez laisser des avis une fois vos projets complétés</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {contracts.map(contract => (
+                    <div
+                      key={contract.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 mb-2">
+                            Contrat #{contract.id.substring(0, 8)}
+                          </h3>
+                          <div className="space-y-1 text-sm">
+                            <p className="text-gray-600">
+                              Montant: {contract.montant_total?.toLocaleString()} F CFA
+                            </p>
+                            <p className="text-gray-600">
+                              Statut: <span className={`font-medium ${
+                                contract.statut === 'termine' ? 'text-green-600' : 'text-blue-600'
+                              }`}>
+                                {contract.statut}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            const { data: artisanData } = await supabase
+                              .from('artisans')
+                              .select('id, nom, prenom')
+                              .eq('id', contract.artisan_id)
+                              .maybeSingle();
+
+                            if (artisanData) {
+                              setSelectedContract(contract);
+                              setReviewedArtisan({
+                                id: artisanData.id,
+                                name: `${artisanData.prenom} ${artisanData.nom}`
+                              });
+                              setShowReviewModal(true);
+                            }
+                          }}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                        >
+                          <Star className="w-4 h-4" />
+                          Donner un avis
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
@@ -834,6 +920,25 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
             setJobForArtisanSelection(null);
           }}
           onSelect={handleSelectArtisan}
+        />
+      )}
+
+      {showReviewModal && selectedContract && reviewedArtisan && (
+        <ReviewSystem
+          contract={selectedContract}
+          reviewedUserId={reviewedArtisan.id}
+          reviewedUserName={reviewedArtisan.name}
+          onClose={() => {
+            setShowReviewModal(false);
+            setSelectedContract(null);
+            setReviewedArtisan(null);
+          }}
+          onSuccess={() => {
+            setShowReviewModal(false);
+            setSelectedContract(null);
+            setReviewedArtisan(null);
+            loadData();
+          }}
         />
       )}
     </div>

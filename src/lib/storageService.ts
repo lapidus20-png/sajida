@@ -136,6 +136,38 @@ class StorageService {
     }
   }
 
+  async uploadJobRequestPhoto(userId: string, file: File): Promise<UploadResult> {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('job-request-photos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('job-request-photos')
+        .getPublicUrl(fileName);
+
+      return {
+        success: true,
+        url: data.publicUrl,
+        path: fileName,
+      };
+    } catch (error) {
+      console.error('Job request photo upload error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erreur lors de l\'upload',
+      };
+    }
+  }
+
   async deleteFile(bucket: string, path: string): Promise<boolean> {
     try {
       const { error } = await supabase.storage
@@ -204,5 +236,9 @@ export const STORAGE_LIMITS = {
   projectPhotos: {
     maxSize: 5,
     allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  },
+  jobRequestPhotos: {
+    maxSize: 5,
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
   },
 };

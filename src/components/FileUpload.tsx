@@ -3,7 +3,7 @@ import { Upload, X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { storageService, STORAGE_LIMITS, UploadResult } from '../lib/storageService';
 
 interface FileUploadProps {
-  bucketType: 'avatars' | 'portfolios' | 'documents' | 'projectPhotos';
+  bucketType: 'avatars' | 'portfolios' | 'documents' | 'projectPhotos' | 'jobRequestPhotos';
   userId?: string;
   contractId?: string;
   onUploadComplete?: (result: UploadResult) => void;
@@ -81,6 +81,10 @@ export default function FileUpload({
         case 'projectPhotos':
           if (!contractId) throw new Error('Contract ID requis pour photo projet');
           result = await storageService.uploadProjectPhoto(contractId, file);
+          break;
+        case 'jobRequestPhotos':
+          if (!userId) throw new Error('User ID requis pour photo demande');
+          result = await storageService.uploadJobRequestPhoto(userId, file);
           break;
         default:
           throw new Error('Type de bucket invalide');
