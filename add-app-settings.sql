@@ -23,7 +23,7 @@ CREATE POLICY "Admins can read app settings"
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'admin'
+      AND users.user_type = 'admin'
     )
   );
 
@@ -37,14 +37,14 @@ CREATE POLICY "Admins can update app settings"
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'admin'
+      AND users.user_type = 'admin'
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'admin'
+      AND users.user_type = 'admin'
     )
   );
 
@@ -58,7 +58,7 @@ CREATE POLICY "Admins can insert app settings"
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'admin'
+      AND users.user_type = 'admin'
     )
   );
 
