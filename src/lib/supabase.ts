@@ -103,6 +103,8 @@ export interface JobRequest {
   images_url: string[];
   latitude?: number;
   longitude?: number;
+  selected_artisan_id?: string | null;
+  closed_at?: string | null;
   created_at: string;
   updated_at: string;
 }

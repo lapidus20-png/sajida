@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen, Send, EyeOff } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, MessageSquare, Eye, Edit2, FolderOpen, Send, EyeOff, Users } from 'lucide-react';
 import { supabase, JobRequest, Quote } from '../lib/supabase';
 import JobRequestForm from './JobRequestForm';
 import DocumentGallery from './DocumentGallery';
+import SelectArtisanModal from './SelectArtisanModal';
 
 interface ClientDashboardProps {
   userId: string;
@@ -16,6 +17,8 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
   const [showCreateJob, setShowCreateJob] = useState(false);
   const [activeTab, setActiveTab] = useState<'demandes' | 'devis' | 'documents' | 'stats'>('demandes');
   const [selectedJob, setSelectedJob] = useState<JobRequest | null>(null);
+  const [showSelectArtisan, setShowSelectArtisan] = useState(false);
+  const [jobForArtisanSelection, setJobForArtisanSelection] = useState<JobRequest | null>(null);
 
   useEffect(() => {
     if (userId === 'demo') {
@@ -185,6 +188,36 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
     } catch (error) {
       console.error('Erreur lors de la publication:', error);
       alert('Erreur lors de la publication de la demande');
+    }
+  };
+
+  const handleSelectArtisan = async (artisanId: string, quoteId: string) => {
+    if (!jobForArtisanSelection) return;
+
+    try {
+      const { error } = await supabase
+        .from('job_requests')
+        .update({
+          selected_artisan_id: artisanId,
+          statut: 'attribuee',
+        })
+        .eq('id', jobForArtisanSelection.id);
+
+      if (error) throw error;
+
+      await supabase
+        .from('quotes')
+        .update({ statut: 'accepte' })
+        .eq('id', quoteId);
+
+      setShowSelectArtisan(false);
+      setJobForArtisanSelection(null);
+      await loadData();
+
+      alert('Artisan sélectionné avec succès! Votre projet a été attribué.');
+    } catch (error) {
+      console.error('Erreur lors de la sélection de l\'artisan:', error);
+      alert('Erreur lors de la sélection de l\'artisan');
     }
   };
 
@@ -368,8 +401,25 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                             <p className="text-lg font-bold text-blue-600">
                               {quotes.filter(q => q.job_request_id === job.id).length}
                             </p>
-                            <p className="text-xs text-gray-600">devis</p>
+                            <p className="text-xs text-gray-600">
+                              {quotes.filter(q => q.job_request_id === job.id).length > 1 ? 'candidatures' : 'candidature'}
+                            </p>
                           </div>
+                          {quotes.filter(q => q.job_request_id === job.id).length > 0 &&
+                           job.statut !== 'attribuee' &&
+                           job.statut !== 'terminee' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setJobForArtisanSelection(job);
+                                setShowSelectArtisan(true);
+                              }}
+                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                            >
+                              <Users className="w-4 h-4" />
+                              Voir candidats
+                            </button>
+                          )}
                           {(job.statut === 'brouillon' || job.statut === 'publiee') && (
                             <button
                               onClick={(e) => {
@@ -597,6 +647,18 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
             loadData();
           }}
           onCancel={() => setShowCreateJob(false)}
+        />
+      )}
+
+      {showSelectArtisan && jobForArtisanSelection && (
+        <SelectArtisanModal
+          jobId={jobForArtisanSelection.id}
+          jobTitle={jobForArtisanSelection.titre}
+          onClose={() => {
+            setShowSelectArtisan(false);
+            setJobForArtisanSelection(null);
+          }}
+          onSelect={handleSelectArtisan}
         />
       )}
     </div>

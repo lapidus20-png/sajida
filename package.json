@@ -15,7 +15,8 @@
     "fix-auth": "node scripts/fix-auth-simple.mjs",
     "disable-rls": "node scripts/disable-rls-with-service-key.mjs",
     "check-saved-jobs": "node scripts/check-saved-jobs.mjs",
-    "setup-app-settings": "node scripts/setup-app-settings.mjs"
+    "setup-app-settings": "node scripts/setup-app-settings.mjs",
+    "setup-artisan-selection": "node scripts/add-selected-artisan-tracking.mjs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
