@@ -109,6 +109,74 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
           updated_at: new Date(Date.now() - 43200000).toISOString(),
         },
       ]);
+
+      setJobSelections({
+        'demo-1': [
+          {
+            id: 'sel-1',
+            job_request_id: 'demo-1',
+            artisan_id: 'art-1',
+            quote_id: null,
+            selection_order: 1,
+            selected_at: new Date().toISOString(),
+            artisans: {
+              id: 'art-1',
+              nom: 'Traoré',
+              prenom: 'Ibrahim',
+              telephone: '70123456',
+              ville: 'Ouagadougou',
+              quartier: 'Zone 1',
+              metier: ['plomberie'],
+              photo_url: '',
+              latitude: 12.3690,
+              longitude: -1.5270,
+            }
+          },
+          {
+            id: 'sel-2',
+            job_request_id: 'demo-1',
+            artisan_id: 'art-2',
+            quote_id: null,
+            selection_order: 2,
+            selected_at: new Date().toISOString(),
+            artisans: {
+              id: 'art-2',
+              nom: 'Ouédraogo',
+              prenom: 'Marie',
+              telephone: '70234567',
+              ville: 'Ouagadougou',
+              quartier: 'Gounghin',
+              metier: ['plomberie'],
+              photo_url: '',
+              latitude: 12.3950,
+              longitude: -1.4890,
+            }
+          }
+        ],
+        'demo-3': [
+          {
+            id: 'sel-3',
+            job_request_id: 'demo-3',
+            artisan_id: 'art-3',
+            quote_id: null,
+            selection_order: 1,
+            selected_at: new Date().toISOString(),
+            artisans: {
+              id: 'art-3',
+              nom: 'Sawadogo',
+              prenom: 'Jean',
+              telephone: '70345678',
+              ville: 'Ouagadougou',
+              quartier: 'Ouaga 2000',
+              metier: ['electricite'],
+              photo_url: '',
+              latitude: 12.3450,
+              longitude: -1.4820,
+            }
+          }
+        ]
+      });
+
       setLoading(false);
     }, 500);
   };
