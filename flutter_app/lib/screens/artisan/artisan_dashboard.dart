@@ -201,9 +201,7 @@ class _AvailableJobsScreenState extends State<AvailableJobsScreen> {
   Future<void> _loadJobs() async {
     try {
       final response = await Supabase.instance.client
-          .from('demandes_travaux')
-          .select()
-          .eq('statut', 'en_attente')
+          .rpc('get_matching_jobs')
           .order('created_at', ascending: false);
 
       setState(() {
@@ -246,24 +244,65 @@ class _AvailableJobsScreenState extends State<AvailableJobsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                job['titre'] ?? 'Sans titre',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      job['titre'] ?? 'Sans titre',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  if (job['categorie_label'] != null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        job['categorie_label'],
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                               const SizedBox(height: 8),
                               Text(job['description'] ?? ''),
                               const SizedBox(height: 12),
                               Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    job['ville'] ?? job['localisation'] ?? 'Non spécifié',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Budget: ${job['budget'] ?? 0} FCFA',
+                                    'Budget: ${job['budget_min'] ?? 0} - ${job['budget_max'] ?? 0} FCFA',
                                     style: TextStyle(
                                       color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   ElevatedButton(
