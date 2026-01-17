@@ -8,12 +8,28 @@ import 'services/auth_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://fldkqlardekarhibnyyx.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGtxbGFyZGVrYXJoaWJueXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNzg3OTksImV4cCI6MjA3NzY1NDc5OX0.Tx3px0qD74K_6p6OCbT_InyOZZ5mb3i48XY-IHfrUXY',
-  );
-
-  runApp(const MyApp());
+  try {
+    await Supabase.initialize(
+      url: 'https://fldkqlardekarhibnyyx.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGtxbGFyZGVrYXJoaWJueXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNzg3OTksImV4cCI6MjA3NzY1NDc5OX0.Tx3px0qD74K_6p6OCbT_InyOZZ5mb3i48XY-IHfrUXY',
+    );
+    runApp(const MyApp());
+  } catch (e) {
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              'Erreur de configuration Supabase:\n$e',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ),
+      ),
+    ));
+  }
 }
 
 class MyApp extends StatelessWidget {
