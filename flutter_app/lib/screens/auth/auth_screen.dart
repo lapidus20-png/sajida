@@ -15,7 +15,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
   String selectedRole = 'client';
@@ -24,7 +23,6 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -46,7 +44,7 @@ class _AuthScreenState extends State<AuthScreen> {
         password: _passwordController.text,
       );
     } else {
-      if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
+      if (_phoneController.text.isEmpty) {
         _showError('Veuillez remplir tous les champs');
         setState(() => isLoading = false);
         return;
@@ -55,7 +53,6 @@ class _AuthScreenState extends State<AuthScreen> {
       error = await authService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        fullName: _nameController.text,
         telephone: _phoneController.text,
         role: selectedRole,
       );
@@ -106,15 +103,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 32),
 
                 if (!isLogin) ...[
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom complet',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   TextField(
                     controller: _phoneController,
                     decoration: const InputDecoration(

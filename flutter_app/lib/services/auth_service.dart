@@ -29,7 +29,7 @@ class AuthService extends ChangeNotifier {
 
       if (response != null) {
         _userProfile = response;
-        _userRole = response['role'] as String?;
+        _userRole = response['user_type'] as String?;
         notifyListeners();
       }
     } catch (e) {
@@ -40,7 +40,6 @@ class AuthService extends ChangeNotifier {
   Future<String?> signUp({
     required String email,
     required String password,
-    required String fullName,
     required String telephone,
     required String role,
   }) async {
@@ -54,9 +53,8 @@ class AuthService extends ChangeNotifier {
         await _supabase.from('users').insert({
           'id': response.user!.id,
           'email': email,
-          'nom_complet': fullName,
           'telephone': telephone,
-          'role': role,
+          'user_type': role,
         });
 
         await _loadUserProfile();
