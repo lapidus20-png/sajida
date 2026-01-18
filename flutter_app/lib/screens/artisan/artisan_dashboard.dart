@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/wallet_widget.dart';
+import '../../widgets/notification_widget.dart';
+import 'portfolio_screen.dart';
+import 'my_quotes_screen.dart';
+import 'send_quote_screen.dart';
 
 class ArtisanDashboard extends StatefulWidget {
   const ArtisanDashboard({super.key});
@@ -13,15 +18,19 @@ class ArtisanDashboard extends StatefulWidget {
 class _ArtisanDashboardState extends State<ArtisanDashboard> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const ArtisanHomeScreen(),
-    const AvailableJobsScreen(),
-    const MyQuotesScreen(),
-    const ArtisanProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
+    final List<Widget> _screens = [
+      const ArtisanHomeScreen(),
+      const AvailableJobsScreen(),
+      const MyQuotesListScreen(),
+      WalletWidget(userId: userId),
+      const PortfolioScreen(),
+      const ArtisanProfileScreen(),
+    ];
+
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -40,7 +49,15 @@ class _ArtisanDashboardState extends State<ArtisanDashboard> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt),
-            label: 'Mes Devis',
+            label: 'Devis',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance_wallet),
+            label: 'Portefeuille',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.photo_library),
+            label: 'Portfolio',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -65,6 +82,28 @@ class ArtisanHomeScreen extends StatelessWidget {
         title: const Text('Artisan BF'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Scaffold(
+                    appBar: AppBar(
+                      title: const Text('Notifications'),
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    body: NotificationWidget(
+                      userId: Supabase.instance.client.auth.currentUser?.id ?? '',
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -220,6 +259,28 @@ class _AvailableJobsScreenState extends State<AvailableJobsScreen> {
         title: const Text('Projets Disponibles'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Scaffold(
+                    appBar: AppBar(
+                      title: const Text('Notifications'),
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    body: NotificationWidget(
+                      userId: Supabase.instance.client.auth.currentUser?.id ?? '',
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -306,7 +367,15 @@ class _AvailableJobsScreenState extends State<AvailableJobsScreen> {
                                     ),
                                   ),
                                   ElevatedButton(
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              SendQuoteScreen(job: job),
+                                        ),
+                                      ).then((_) => _loadJobs());
+                                    },
                                     child: const Text('Envoyer un devis'),
                                   ),
                                 ],
@@ -322,26 +391,6 @@ class _AvailableJobsScreenState extends State<AvailableJobsScreen> {
   }
 }
 
-class MyQuotesScreen extends StatelessWidget {
-  const MyQuotesScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mes Devis'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Text(
-          'Aucun devis pour le moment',
-          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-        ),
-      ),
-    );
-  }
-}
 
 class ArtisanProfileScreen extends StatelessWidget {
   const ArtisanProfileScreen({super.key});
