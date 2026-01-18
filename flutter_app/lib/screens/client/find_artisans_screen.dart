@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../constants/app_constants.dart';
 
 class FindArtisansScreen extends StatefulWidget {
   const FindArtisansScreen({super.key});
@@ -62,7 +63,7 @@ class _FindArtisansScreenState extends State<FindArtisansScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Trouver un Artisan'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: AppConstants.primaryRed,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -135,13 +136,11 @@ class _FindArtisansScreenState extends State<FindArtisansScreen> {
                                     children: [
                                       CircleAvatar(
                                         radius: 30,
-                                        backgroundColor: Theme.of(context)
-                                            .primaryColor
-                                            .withOpacity(0.1),
-                                        child: Icon(
+                                        backgroundColor: AppConstants.primaryGreen.withOpacity(0.1),
+                                        child: const Icon(
                                           Icons.person,
                                           size: 30,
-                                          color: Theme.of(context).primaryColor,
+                                          color: AppConstants.primaryGreen,
                                         ),
                                       ),
                                       const SizedBox(width: 16),

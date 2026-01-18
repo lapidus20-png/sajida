@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/notification_widget.dart';
+import '../../constants/app_constants.dart';
 import 'post_job_screen.dart';
 import 'my_jobs_screen.dart';
 import 'find_artisans_screen.dart';
@@ -32,7 +33,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).primaryColor,
+        selectedItemColor: AppConstants.primaryRed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -66,8 +67,8 @@ class ClientHomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Artisan BF'),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: const Text(AppConstants.appName),
+        backgroundColor: AppConstants.primaryRed,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -79,7 +80,7 @@ class ClientHomeScreen extends StatelessWidget {
                   builder: (context) => Scaffold(
                     appBar: AppBar(
                       title: const Text('Notifications'),
-                      backgroundColor: Theme.of(context).primaryColor,
+                      backgroundColor: AppConstants.primaryRed,
                       foregroundColor: Colors.white,
                     ),
                     body: NotificationWidget(
@@ -130,13 +131,13 @@ class ClientHomeScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          color: AppConstants.primaryGreen.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.add_circle_outline,
                           size: 32,
-                          color: Theme.of(context).primaryColor,
+                          color: AppConstants.primaryGreen,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -189,22 +190,22 @@ class ClientHomeScreen extends StatelessWidget {
                 CategoryCard(
                   title: 'Plomberie',
                   icon: Icons.plumbing,
-                  color: Colors.blue,
+                  color: AppConstants.primaryGreen,
                 ),
                 CategoryCard(
                   title: 'Électricité',
                   icon: Icons.electrical_services,
-                  color: Colors.orange,
+                  color: AppConstants.primaryYellow,
                 ),
                 CategoryCard(
                   title: 'Menuiserie',
                   icon: Icons.carpenter,
-                  color: Colors.brown,
+                  color: AppConstants.primaryRed,
                 ),
                 CategoryCard(
                   title: 'Maçonnerie',
                   icon: Icons.construction,
-                  color: Colors.grey,
+                  color: AppConstants.primaryGreen,
                 ),
               ],
             ),
@@ -233,16 +234,29 @@ class CategoryCard extends StatelessWidget {
       elevation: 2,
       child: InkWell(
         onTap: () {},
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: color),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -260,7 +274,7 @@ class ClientProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mon Profil'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: AppConstants.primaryRed,
         foregroundColor: Colors.white,
       ),
       body: ListView(
@@ -268,7 +282,7 @@ class ClientProfileScreen extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 50,
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: AppConstants.primaryRed,
             child: const Icon(Icons.person, size: 50, color: Colors.white),
           ),
           const SizedBox(height: 16),
