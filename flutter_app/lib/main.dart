@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/main_navigation.dart';
-import 'services/auth_service.dart';
+import 'constants/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +12,7 @@ void main() async {
       url: 'https://fldkqlardekarhibnyyx.supabase.co',
       anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGtxbGFyZGVrYXJoaWJueXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNzg3OTksImV4cCI6MjA3NzY1NDc5OX0.Tx3px0qD74K_6p6OCbT_InyOZZ5mb3i48XY-IHfrUXY',
     );
-    runApp(const MyApp());
+    runApp(const BuilderHubApp());
   } catch (e) {
     runApp(MaterialApp(
       home: Scaffold(
@@ -32,25 +31,16 @@ void main() async {
   }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BuilderHubApp extends StatelessWidget {
+  const BuilderHubApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
-      ],
-      child: MaterialApp(
-        title: 'Artisan BF',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.grey[50],
-          useMaterial3: true,
-        ),
-        home: const AuthWrapper(),
-      ),
+    return MaterialApp(
+      title: AppConstants.appName,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: const AuthWrapper(),
     );
   }
 }
