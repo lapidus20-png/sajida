@@ -3,6 +3,7 @@ import { LogIn, UserPlus, Mail, Lock, Phone, MapPin, AlertCircle, Eye, Wrench, H
 import { supabase } from '../lib/supabase';
 import ClientDashboard from './ClientDashboard';
 import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
+import { PhoneAuthModal } from './PhoneAuthModal';
 
 interface AuthPageProps {
   onSuccess: () => void;
@@ -15,6 +16,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [demoMode, setDemoMode] = useState(false);
+  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -137,8 +139,19 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <>
+      {showPhoneAuth && (
+        <PhoneAuthModal
+          onClose={() => setShowPhoneAuth(false)}
+          onSuccess={() => {
+            setShowPhoneAuth(false);
+            onSuccess();
+          }}
+        />
+      )}
+
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="relative burkina-gradient text-white" style={{ height: '160px' }}>
             <div className="absolute inset-0 grid grid-cols-5 gap-2 p-3 opacity-50">
@@ -390,6 +403,24 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                 )}
               </button>
             </form>
+
+            {mode === 'login' && (
+              <div className="mt-6">
+                <div className="flex items-center justify-center my-4">
+                  <div className="border-t border-gray-300 flex-grow"></div>
+                  <span className="px-4 text-gray-500 text-sm">ou</span>
+                  <div className="border-t border-gray-300 flex-grow"></div>
+                </div>
+
+                <button
+                  onClick={() => setShowPhoneAuth(true)}
+                  className="w-full bg-white border-2 border-yellow-500 text-yellow-700 py-3 rounded-lg font-medium hover:bg-yellow-50 transition flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-5 h-5" />
+                  Connexion par SMS
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -407,5 +438,6 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
