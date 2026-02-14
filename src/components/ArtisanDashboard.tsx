@@ -71,7 +71,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
     try {
       const artisanResult = await supabase
         .from('artisans')
-        .select('id, user_id, nom, prenom, metier, note_moyenne, statut_verification, annees_experience, telephone, ville, latitude, longitude, description, portefeuille, certifications, tarif_horaire, assurance_rcpro')
+        .select('*')
         .eq('id', artisanId)
         .maybeSingle();
 
@@ -80,7 +80,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       const userResult = await supabase
         .from('users')
-        .select('id, user_type, email, telephone, adresse, ville, created_at')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
 
@@ -94,7 +94,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       const jobsQuery = supabase
         .from('job_requests')
-        .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
+        .select('*')
         .eq('statut', 'publiee')
         .order('created_at', { ascending: false })
         .limit(20);
@@ -107,13 +107,13 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         jobsQuery,
         supabase
           .from('quotes')
-          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, description_travaux, delai_execution, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at')
+          .select('*')
           .eq('artisan_id', artisanId)
           .order('created_at', { ascending: false })
           .limit(50),
         supabase
           .from('reviews')
-          .select('id, reviewer_id, note, commentaire, verified, created_at')
+          .select('*')
           .eq('reviewed_user_id', userId)
           .order('created_at', { ascending: false })
           .limit(20),
@@ -468,7 +468,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   };
 
   const handleRemoveMetier = (metierToRemove: string) => {
-    if (editedProfile.metier) {
+    if (editedProfile.metier && Array.isArray(editedProfile.metier)) {
       setEditedProfile({
         ...editedProfile,
         metier: editedProfile.metier.filter(m => m !== metierToRemove)
@@ -1311,7 +1311,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {(() => {
-                                const metiers = editedProfile.metier || [];
+                                const metiers = Array.isArray(editedProfile.metier) ? editedProfile.metier : [];
                                 return metiers.length > 0 ? (
                                   metiers.map((m, idx) => (
                                     <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
