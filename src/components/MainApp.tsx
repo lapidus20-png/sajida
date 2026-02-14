@@ -57,7 +57,7 @@ export default function MainApp() {
     try {
       const userResult = await supabase
         .from('users')
-        .select('id, email, user_type, telephone, adresse, ville, created_at')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
 
