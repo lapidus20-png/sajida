@@ -51,88 +51,71 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   useEffect(() => {
     loadAdminStats();
-    loadUsers();
-    loadJobRequests();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadUsers();
+    } else if (activeTab === 'jobs') {
+      loadJobRequests();
+    }
+  }, [activeTab]);
 
   const loadAdminStats = async () => {
     try {
-      const [
-        usersTotal,
-        usersClients,
-        usersArtisans,
-        jobsTotal,
-        jobsPubliees,
-        jobsEnCours,
-        jobsTerminees,
-        quotesTotal,
-        quotesAcceptes,
-        quotesRefuses,
-        quotesEnAttente,
-        reviewsTotal,
-        reviewsVerified,
-        artisansTotal,
-        artisansPending,
-        artisansVerified,
-        artisansRejected,
-      ] = await Promise.all([
-        supabase.from('users').select('*', { count: 'exact', head: true }),
-        supabase.from('users').select('*', { count: 'exact', head: true }).eq('user_type', 'client'),
-        supabase.from('users').select('*', { count: 'exact', head: true }).eq('user_type', 'artisan'),
-        supabase.from('job_requests').select('*', { count: 'exact', head: true }),
-        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'publiee'),
-        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'en_cours'),
-        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'terminee'),
-        supabase.from('quotes').select('*', { count: 'exact', head: true }),
-        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'accepte'),
-        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'refuse'),
-        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
-        supabase.from('reviews').select('*', { count: 'exact', head: true }),
-        supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('verified', true),
-        supabase.from('artisans').select('*', { count: 'exact', head: true }),
-        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'en_attente'),
-        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'verifie'),
-        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'rejete'),
+      const [usersData, jobsData, quotesData, reviewsData, artisansData] = await Promise.all([
+        supabase.from('users').select('user_type'),
+        supabase.from('job_requests').select('statut'),
+        supabase.from('quotes').select('statut'),
+        supabase.from('reviews').select('verified'),
+        supabase.from('artisans').select('statut_verification'),
       ]);
+
+      const users = usersData.data || [];
+      const jobs = jobsData.data || [];
+      const quotes = quotesData.data || [];
+      const reviews = reviewsData.data || [];
+      const artisans = artisansData.data || [];
 
       setStats({
         users: {
-          total: usersTotal.count || 0,
-          clients: usersClients.count || 0,
-          artisans: usersArtisans.count || 0,
+          total: users.length,
+          clients: users.filter(u => u.user_type === 'client').length,
+          artisans: users.filter(u => u.user_type === 'artisan').length,
         },
         jobs: {
-          total: jobsTotal.count || 0,
-          publiees: jobsPubliees.count || 0,
-          en_cours: jobsEnCours.count || 0,
-          terminees: jobsTerminees.count || 0,
+          total: jobs.length,
+          publiees: jobs.filter(j => j.statut === 'publiee').length,
+          en_cours: jobs.filter(j => j.statut === 'en_cours').length,
+          terminees: jobs.filter(j => j.statut === 'terminee').length,
         },
         quotes: {
-          total: quotesTotal.count || 0,
-          acceptes: quotesAcceptes.count || 0,
-          refuses: quotesRefuses.count || 0,
-          en_attente: quotesEnAttente.count || 0,
+          total: quotes.length,
+          acceptes: quotes.filter(q => q.statut === 'accepte').length,
+          refuses: quotes.filter(q => q.statut === 'refuse').length,
+          en_attente: quotes.filter(q => q.statut === 'en_attente').length,
         },
         reviews: {
-          total: reviewsTotal.count || 0,
-          verified: reviewsVerified.count || 0,
-          pending: (reviewsTotal.count || 0) - (reviewsVerified.count || 0),
+          total: reviews.length,
+          verified: reviews.filter(r => r.verified === true).length,
+          pending: reviews.filter(r => r.verified !== true).length,
         },
         artisans: {
-          total: artisansTotal.count || 0,
-          pending: artisansPending.count || 0,
-          verified: artisansVerified.count || 0,
-          rejected: artisansRejected.count || 0,
+          total: artisans.length,
+          pending: artisans.filter(a => a.statut_verification === 'en_attente').length,
+          verified: artisans.filter(a => a.statut_verification === 'verifie').length,
+          rejected: artisans.filter(a => a.statut_verification === 'rejete').length,
         },
       });
 
-      const { data: artisansData } = await supabase
+      const { data: pendingArtisansData } = await supabase
         .from('artisans')
         .select('*')
         .eq('statut_verification', 'en_attente')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-      setPendingArtisans(artisansData || []);
+      setPendingArtisans(pendingArtisansData || []);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -145,7 +128,8 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
       setAllUsers(data || []);
@@ -159,7 +143,8 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       const { data, error } = await supabase
         .from('job_requests')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
       setAllJobRequests(data || []);
