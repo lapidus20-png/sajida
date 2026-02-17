@@ -69,22 +69,23 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const loadData = async () => {
     setLoading(true);
     try {
-      const artisanResult = await supabase
-        .from('artisans')
-        .select('*')
-        .eq('id', artisanId)
-        .maybeSingle();
+      const [artisanResult, userResult] = await Promise.all([
+        supabase
+          .from('artisans')
+          .select('*')
+          .eq('id', artisanId)
+          .maybeSingle(),
+        supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle()
+      ]);
 
       if (artisanResult.error) throw artisanResult.error;
-      setArtisan(artisanResult.data);
-
-      const userResult = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
       if (userResult.error) throw userResult.error;
+
+      setArtisan(artisanResult.data);
       setUserAccount(userResult.data);
       setLoading(false);
 
@@ -103,7 +104,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         jobsQuery.in('categorie', jobCategories);
       }
 
-      const [jobsResult, quotesResult, reviewsResult, savedJobsResult] = await Promise.all([
+      Promise.all([
         jobsQuery,
         supabase
           .from('quotes')
@@ -120,37 +121,41 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         supabase
           .from('saved_jobs')
           .select('job_request_id')
-          .eq('artisan_id', artisanId)
-      ]);
-
-      if (jobsResult.error) throw jobsResult.error;
-      setJobRequests(jobsResult.data || []);
-
-      if (quotesResult.error) throw quotesResult.error;
-      setMyQuotes(quotesResult.data || []);
-
-      if (reviewsResult.error) throw reviewsResult.error;
-      setReviews(reviewsResult.data || []);
-
-      if (!savedJobsResult.error && savedJobsResult.data) {
-        setSavedJobs(savedJobsResult.data.map(sj => sj.job_request_id));
-      }
-
-      const unlockedJobIds = await unlockService.getUnlockedJobIds(artisanId);
-      setUnlockedJobs(unlockedJobIds);
-
-      for (const jobId of unlockedJobIds) {
-        const details = await unlockService.getClientDetails(jobId, artisanId);
-        if (details) {
-          setClientDetails(prev => ({ ...prev, [jobId]: details }));
+          .eq('artisan_id', artisanId),
+        unlockService.getUnlockedJobIds(artisanId),
+        walletService.getBalance(artisanId),
+        walletService.getTransactions(artisanId)
+      ]).then(async ([jobsResult, quotesResult, reviewsResult, savedJobsResult, unlockedJobIds, balance, transactions]) => {
+        if (!jobsResult.error) {
+          setJobRequests(jobsResult.data || []);
         }
-      }
 
-      const balance = await walletService.getBalance(artisanId);
-      setWalletBalance(balance);
+        if (!quotesResult.error) {
+          setMyQuotes(quotesResult.data || []);
+        }
 
-      const transactions = await walletService.getTransactions(artisanId);
-      setWalletTransactions(transactions);
+        if (!reviewsResult.error) {
+          setReviews(reviewsResult.data || []);
+        }
+
+        if (!savedJobsResult.error && savedJobsResult.data) {
+          setSavedJobs(savedJobsResult.data.map(sj => sj.job_request_id));
+        }
+
+        setUnlockedJobs(unlockedJobIds);
+        setWalletBalance(balance);
+        setWalletTransactions(transactions);
+
+        for (const jobId of unlockedJobIds) {
+          unlockService.getClientDetails(jobId, artisanId).then(details => {
+            if (details) {
+              setClientDetails(prev => ({ ...prev, [jobId]: details }));
+            }
+          });
+        }
+      }).catch(err => {
+        console.error('Error loading additional data:', err);
+      });
     } catch (error) {
       console.error('Erreur:', error);
       setLoading(false);

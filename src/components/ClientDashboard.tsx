@@ -204,61 +204,64 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       if (jobsData && jobsData.length > 0) {
         const jobIds = jobsData.map(j => j.id);
 
-        const { data: quotesData, error: quotesError } = await supabase
-          .from('quotes')
-          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at, updated_at')
-          .in('job_request_id', jobIds)
-          .order('created_at', { ascending: false })
-          .limit(100);
-
-        if (quotesError) throw quotesError;
-        setQuotes(quotesData || []);
-
-        const { data: selectionsData, error: selectionsError } = await supabase
-          .from('job_artisan_selections')
-          .select(`
-            id,
-            job_request_id,
-            artisan_id,
-            quote_id,
-            selection_order,
-            selected_at,
-            artisans (
+        Promise.all([
+          supabase
+            .from('quotes')
+            .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at, updated_at')
+            .in('job_request_id', jobIds)
+            .order('created_at', { ascending: false })
+            .limit(100),
+          supabase
+            .from('job_artisan_selections')
+            .select(`
               id,
-              nom,
-              prenom,
-              telephone,
-              ville,
-              quartier,
-              metier,
-              photo_url,
-              latitude,
-              longitude
-            )
-          `)
-          .in('job_request_id', jobIds)
-          .order('selection_order', { ascending: true });
+              job_request_id,
+              artisan_id,
+              quote_id,
+              selection_order,
+              selected_at,
+              artisans (
+                id,
+                nom,
+                prenom,
+                telephone,
+                ville,
+                quartier,
+                metier,
+                photo_url,
+                latitude,
+                longitude
+              )
+            `)
+            .in('job_request_id', jobIds)
+            .order('selection_order', { ascending: true }),
+          supabase
+            .from('contracts')
+            .select('*')
+            .eq('client_id', userId)
+            .order('created_at', { ascending: false })
+        ]).then(([quotesResult, selectionsResult, contractsResult]) => {
+          if (!quotesResult.error) {
+            setQuotes(quotesResult.data || []);
+          }
 
-        if (!selectionsError && selectionsData) {
-          const selectionsByJob: Record<string, any[]> = {};
-          selectionsData.forEach(sel => {
-            if (!selectionsByJob[sel.job_request_id]) {
-              selectionsByJob[sel.job_request_id] = [];
-            }
-            selectionsByJob[sel.job_request_id].push(sel);
-          });
-          setJobSelections(selectionsByJob);
-        }
+          if (!selectionsResult.error && selectionsResult.data) {
+            const selectionsByJob: Record<string, any[]> = {};
+            selectionsResult.data.forEach(sel => {
+              if (!selectionsByJob[sel.job_request_id]) {
+                selectionsByJob[sel.job_request_id] = [];
+              }
+              selectionsByJob[sel.job_request_id].push(sel);
+            });
+            setJobSelections(selectionsByJob);
+          }
 
-        const { data: contractsData, error: contractsError } = await supabase
-          .from('contracts')
-          .select('*')
-          .eq('client_id', userId)
-          .order('created_at', { ascending: false });
-
-        if (!contractsError) {
-          setContracts(contractsData || []);
-        }
+          if (!contractsResult.error) {
+            setContracts(contractsResult.data || []);
+          }
+        }).catch(err => {
+          console.error('Error loading additional data:', err);
+        });
       } else {
         setQuotes([]);
         setJobSelections({});
@@ -266,6 +269,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       }
     } catch (error) {
       console.error('Erreur:', error);
+      setJobRequests([]);
       setLoading(false);
     }
   };
