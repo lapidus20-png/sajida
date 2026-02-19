@@ -95,10 +95,10 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       const jobsQuery = supabase
         .from('job_requests')
-        .select('*')
+        .select('id, titre, description, categorie, budget_max, localisation, ville, latitude, longitude, created_at, client_id')
         .eq('statut', 'publiee')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (jobCategories.length > 0) {
         jobsQuery.in('categorie', jobCategories);
@@ -108,16 +108,16 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         jobsQuery,
         supabase
           .from('quotes')
-          .select('*')
+          .select('id, job_request_id, montant_total, montant_acompte, delai_execution, description_travaux, statut, validite_jusqu_au, created_at')
           .eq('artisan_id', artisanId)
           .order('created_at', { ascending: false })
-          .limit(50),
+          .limit(30),
         supabase
           .from('reviews')
-          .select('*')
+          .select('id, note, commentaire, verified, created_at')
           .eq('reviewed_user_id', userId)
           .order('created_at', { ascending: false })
-          .limit(20),
+          .limit(10),
         supabase
           .from('saved_jobs')
           .select('job_request_id')

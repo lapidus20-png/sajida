@@ -192,7 +192,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
     try {
       const { data: jobsData, error: jobsError } = await supabase
         .from('job_requests')
-        .select('*')
+        .select('id, titre, description, categorie, statut, budget_max, localisation, ville, latitude, longitude, date_souhaitee, created_at, client_id, selected_artisan_id')
         .eq('client_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -207,7 +207,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
         Promise.all([
           supabase
             .from('quotes')
-            .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at, updated_at')
+            .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at')
             .in('job_request_id', jobIds)
             .order('created_at', { ascending: false })
             .limit(100),
@@ -237,9 +237,10 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
             .order('selection_order', { ascending: true }),
           supabase
             .from('contracts')
-            .select('*')
+            .select('id, artisan_id, client_id, montant_total, statut, created_at')
             .eq('client_id', userId)
             .order('created_at', { ascending: false })
+            .limit(30)
         ]).then(([quotesResult, selectionsResult, contractsResult]) => {
           if (!quotesResult.error) {
             setQuotes(quotesResult.data || []);

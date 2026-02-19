@@ -63,59 +63,21 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadAdminStats = async () => {
     try {
-      const [usersData, jobsData, quotesData, reviewsData, artisansData] = await Promise.all([
-        supabase.from('users').select('user_type'),
-        supabase.from('job_requests').select('statut'),
-        supabase.from('quotes').select('statut'),
-        supabase.from('reviews').select('verified'),
-        supabase.from('artisans').select('statut_verification'),
+      const [statsResult, pendingArtisansData] = await Promise.all([
+        supabase.rpc('get_admin_stats'),
+        supabase
+          .from('artisans')
+          .select('*')
+          .eq('statut_verification', 'en_attente')
+          .order('created_at', { ascending: false })
+          .limit(20)
       ]);
 
-      const users = usersData.data || [];
-      const jobs = jobsData.data || [];
-      const quotes = quotesData.data || [];
-      const reviews = reviewsData.data || [];
-      const artisans = artisansData.data || [];
+      if (statsResult.data) {
+        setStats(statsResult.data);
+      }
 
-      setStats({
-        users: {
-          total: users.length,
-          clients: users.filter(u => u.user_type === 'client').length,
-          artisans: users.filter(u => u.user_type === 'artisan').length,
-        },
-        jobs: {
-          total: jobs.length,
-          publiees: jobs.filter(j => j.statut === 'publiee').length,
-          en_cours: jobs.filter(j => j.statut === 'en_cours').length,
-          terminees: jobs.filter(j => j.statut === 'terminee').length,
-        },
-        quotes: {
-          total: quotes.length,
-          acceptes: quotes.filter(q => q.statut === 'accepte').length,
-          refuses: quotes.filter(q => q.statut === 'refuse').length,
-          en_attente: quotes.filter(q => q.statut === 'en_attente').length,
-        },
-        reviews: {
-          total: reviews.length,
-          verified: reviews.filter(r => r.verified === true).length,
-          pending: reviews.filter(r => r.verified !== true).length,
-        },
-        artisans: {
-          total: artisans.length,
-          pending: artisans.filter(a => a.statut_verification === 'en_attente').length,
-          verified: artisans.filter(a => a.statut_verification === 'verifie').length,
-          rejected: artisans.filter(a => a.statut_verification === 'rejete').length,
-        },
-      });
-
-      const { data: pendingArtisansData } = await supabase
-        .from('artisans')
-        .select('*')
-        .eq('statut_verification', 'en_attente')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      setPendingArtisans(pendingArtisansData || []);
+      setPendingArtisans(pendingArtisansData.data || []);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -125,11 +87,13 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const query = supabase
         .from('users')
-        .select('*')
+        .select('id, email, user_type, telephone, ville, created_at')
         .order('created_at', { ascending: false })
         .limit(100);
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setAllUsers(data || []);
@@ -140,11 +104,13 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadJobRequests = async () => {
     try {
-      const { data, error } = await supabase
+      const query = supabase
         .from('job_requests')
-        .select('*')
+        .select('id, titre, description, categorie, statut, budget_max, ville, date_souhaitee, created_at')
         .order('created_at', { ascending: false })
         .limit(100);
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setAllJobRequests(data || []);
