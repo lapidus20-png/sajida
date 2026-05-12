@@ -64,8 +64,30 @@ export default function MainApp() {
       if (userResult.error) throw userResult.error;
 
       if (!userResult.data) {
-        console.error('No user data found. Please contact support.');
-        await supabase.auth.signOut();
+        // Profile missing — create a default client profile so login succeeds
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) { await supabase.auth.signOut(); return; }
+
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: authUser.id,
+            email: authUser.email || '',
+            user_type: 'client',
+            telephone: '',
+            adresse: '',
+            ville: '',
+          })
+          .select()
+          .single();
+
+        if (createError || !newUser) {
+          console.error('Could not create user profile:', createError);
+          await supabase.auth.signOut();
+          return;
+        }
+
+        setUser(newUser);
         return;
       }
 
