@@ -64,8 +64,29 @@ export default function MainApp() {
       if (userResult.error) throw userResult.error;
 
       if (!userResult.data) {
-        console.error('No user data found. Please contact support.');
-        await supabase.auth.signOut();
+        // Profile missing — create it from auth session metadata
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) { await supabase.auth.signOut(); return; }
+
+        const { error: insertError } = await supabase.from('users').insert({
+          id: authUser.id,
+          email: authUser.email ?? '',
+          user_type: authUser.user_metadata?.user_type ?? 'client',
+          telephone: authUser.user_metadata?.telephone ?? '',
+          adresse: authUser.user_metadata?.adresse ?? '',
+          ville: authUser.user_metadata?.ville ?? '',
+        });
+
+        if (insertError) {
+          console.error('Could not create user profile:', insertError.message);
+          await supabase.auth.signOut();
+          return;
+        }
+
+        // Re-fetch after creation
+        const { data: retryData } = await supabase.from('users').select('*').eq('id', userId).maybeSingle();
+        if (!retryData) { await supabase.auth.signOut(); return; }
+        setUser(retryData);
         return;
       }
 
@@ -89,7 +110,7 @@ export default function MainApp() {
             user_id: userId,
             nom: userResult.data.email?.split('@')[0] || 'Artisan',
             prenom: '',
-            metier: 'Non spécifié',
+            metier: ['Non spécifié'],
             telephone: userResult.data.telephone || '',
             ville: userResult.data.ville || '',
             note_moyenne: 0,
@@ -112,7 +133,6 @@ export default function MainApp() {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
-      await supabase.auth.signOut();
     }
   };
 

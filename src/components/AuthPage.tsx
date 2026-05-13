@@ -82,6 +82,14 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            user_type: userType,
+            telephone: formData.telephone || '',
+            adresse: formData.adresse || '',
+            ville: formData.ville || '',
+          },
+        },
       });
 
       if (authError) throw new Error(authError.message);
@@ -89,18 +97,19 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
 
       setLoadingMessage('Configuration du profil...');
 
+      // Upsert user profile (trigger may have already created it)
+      const { error: userError } = await supabase.from('users').upsert({
+        id: authData.user.id,
+        email: authData.user.email ?? formData.email,
+        user_type: userType,
+        telephone: formData.telephone || '',
+        adresse: formData.adresse || '',
+        ville: formData.ville || '',
+      }, { onConflict: 'id' });
+
+      if (userError) throw new Error(`Erreur profil: ${userError.message}`);
+
       if (userType === 'artisan') {
-        const userResult = await supabase.from('users').insert({
-          id: authData.user.id,
-          email: authData.user.email,
-          user_type: userType,
-          telephone: formData.telephone || null,
-          adresse: formData.adresse || null,
-          ville: formData.ville || null,
-        });
-
-        if (userResult.error) throw new Error(`User profile error: ${userResult.error.message}`);
-
         const artisanResult = await supabase.from('artisans').insert({
           user_id: authData.user.id,
           nom: formData.nom,
@@ -113,18 +122,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           disponible: true,
         });
 
-        if (artisanResult.error) throw new Error(`Artisan profile error: ${artisanResult.error.message}`);
-      } else {
-        const { error: userError } = await supabase.from('users').insert({
-          id: authData.user.id,
-          email: authData.user.email,
-          user_type: userType,
-          telephone: formData.telephone || null,
-          adresse: formData.adresse || null,
-          ville: formData.ville || null,
-        });
-
-        if (userError) throw new Error(`Database error: ${userError.message}`);
+        if (artisanResult.error) throw new Error(`Erreur profil artisan: ${artisanResult.error.message}`);
       }
 
       // Auth state change listener will handle the rest
