@@ -82,14 +82,6 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            user_type: userType,
-            telephone: formData.telephone || '',
-            adresse: formData.adresse || '',
-            ville: formData.ville || '',
-          },
-        },
       });
 
       if (authError) throw new Error(authError.message);
