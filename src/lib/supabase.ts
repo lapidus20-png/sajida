@@ -10,12 +10,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase configuration is missing. Please check your .env file.');
 }
 
+// Remove any session stored under the old key (different project)
+localStorage.removeItem('builderhub-auth');
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'builderhub-auth',
+    storageKey: 'builderhub-auth-v2',
   },
   db: {
     schema: 'public'
