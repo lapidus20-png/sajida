@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import UnifiedLocationPicker from './UnifiedLocationPicker';
 import MultiFileUpload from './MultiFileUpload';
 import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
+import { getCategoryInfo } from '../lib/categoryMapping';
 
 interface JobRequestFormProps {
   clientId: string;
@@ -50,6 +51,8 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
           titre: formData.titre,
           description: formData.description,
           categorie: formData.categorie,
+          categorie_id: getCategoryInfo(formData.categorie)?.id || null,
+          categorie_key: getCategoryInfo(formData.categorie)?.key || null,
           localisation: formData.localisation,
           ville: formData.ville,
           budget_min: 0,
