@@ -59,7 +59,7 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
           images_url: images,
           latitude: location?.lat || null,
           longitude: location?.lng || null,
-          statut: 'brouillon',
+          statut: 'publiee',
         });
 
       if (insertError) throw new Error(insertError.message);
