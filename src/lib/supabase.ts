@@ -3,8 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://fldkqlardekarhibnyyx.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGtxbGFyZGVrYXJoaWJueXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNzg3OTksImV4cCI6MjA3NzY1NDc5OX0.Tx3px0qD74K_6p6OCbT_InyOZZ5mb3i48XY-IHfrUXY';
 
-// Remove any session stored under the old key (different project)
+// Remove any session stored under old keys (different project)
 localStorage.removeItem('builderhub-auth');
+localStorage.removeItem('builderhub-auth-v2');
+// Clear any cached Supabase tokens from the previous project
+Object.keys(localStorage).forEach(key => {
+  if (key.startsWith('sb-') && !key.startsWith('sb-fldkqlardekarhibnyyx')) {
+    localStorage.removeItem(key);
+  }
+});
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

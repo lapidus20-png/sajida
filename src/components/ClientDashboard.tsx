@@ -204,65 +204,66 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       if (jobsData && jobsData.length > 0) {
         const jobIds = jobsData.map(j => j.id);
 
-        Promise.all([
-          supabase
-            .from('quotes')
-            .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at')
-            .in('job_request_id', jobIds)
-            .order('created_at', { ascending: false })
-            .limit(100),
-          supabase
-            .from('job_artisan_selections')
-            .select(`
+        // Run each query independently so one failure doesn't block the others
+        supabase
+          .from('quotes')
+          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at')
+          .in('job_request_id', jobIds)
+          .order('created_at', { ascending: false })
+          .limit(100)
+          .then(quotesResult => {
+            if (!quotesResult.error) setQuotes(quotesResult.data || []);
+          })
+          .catch(err => console.error('Error loading quotes:', err));
+
+        supabase
+          .from('job_artisan_selections')
+          .select(`
+            id,
+            job_request_id,
+            artisan_id,
+            quote_id,
+            selection_order,
+            selected_at,
+            artisans (
               id,
-              job_request_id,
-              artisan_id,
-              quote_id,
-              selection_order,
-              selected_at,
-              artisans (
-                id,
-                nom,
-                prenom,
-                telephone,
-                ville,
-                quartier,
-                metier,
-                photo_url,
-                latitude,
-                longitude
-              )
-            `)
-            .in('job_request_id', jobIds)
-            .order('selection_order', { ascending: true }),
-          supabase
-            .from('contracts')
-            .select('id, artisan_id, client_id, montant_total, statut, created_at')
-            .eq('client_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(30)
-        ]).then(([quotesResult, selectionsResult, contractsResult]) => {
-          if (!quotesResult.error) {
-            setQuotes(quotesResult.data || []);
-          }
+              nom,
+              prenom,
+              telephone,
+              ville,
+              quartier,
+              metier,
+              photo_url,
+              latitude,
+              longitude
+            )
+          `)
+          .in('job_request_id', jobIds)
+          .order('selection_order', { ascending: true })
+          .then(selectionsResult => {
+            if (!selectionsResult.error && selectionsResult.data) {
+              const selectionsByJob: Record<string, any[]> = {};
+              selectionsResult.data.forEach(sel => {
+                if (!selectionsByJob[sel.job_request_id]) {
+                  selectionsByJob[sel.job_request_id] = [];
+                }
+                selectionsByJob[sel.job_request_id].push(sel);
+              });
+              setJobSelections(selectionsByJob);
+            }
+          })
+          .catch(err => console.error('Error loading selections:', err));
 
-          if (!selectionsResult.error && selectionsResult.data) {
-            const selectionsByJob: Record<string, any[]> = {};
-            selectionsResult.data.forEach(sel => {
-              if (!selectionsByJob[sel.job_request_id]) {
-                selectionsByJob[sel.job_request_id] = [];
-              }
-              selectionsByJob[sel.job_request_id].push(sel);
-            });
-            setJobSelections(selectionsByJob);
-          }
-
-          if (!contractsResult.error) {
-            setContracts(contractsResult.data || []);
-          }
-        }).catch(err => {
-          console.error('Error loading additional data:', err);
-        });
+        supabase
+          .from('contracts')
+          .select('id, artisan_id, client_id, montant_total, statut, created_at')
+          .eq('client_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(30)
+          .then(contractsResult => {
+            if (!contractsResult.error) setContracts(contractsResult.data || []);
+          })
+          .catch(err => console.error('Error loading contracts:', err));
       } else {
         setQuotes([]);
         setJobSelections({});
