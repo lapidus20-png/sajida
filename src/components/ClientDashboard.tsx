@@ -192,7 +192,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
     try {
       const { data: jobsData, error: jobsError } = await supabase
         .from('job_requests')
-        .select('id, titre, description, categorie, statut, budget_max, localisation, ville, latitude, longitude, date_souhaitee, created_at, client_id, selected_artisan_id')
+        .select('id, client_id, titre, description, categorie, statut, budget_min, budget_max, localisation, ville, latitude, longitude, date_souhaitee, created_at')
         .eq('client_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -204,19 +204,17 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       if (jobsData && jobsData.length > 0) {
         const jobIds = jobsData.map(j => j.id);
 
-        // Run each query independently so one failure doesn't block the others
-        supabase
+        const { data: quotesData, error: quotesError } = await supabase
           .from('quotes')
-          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at')
+          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, delai_execution, description_travaux, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at, updated_at')
           .in('job_request_id', jobIds)
           .order('created_at', { ascending: false })
-          .limit(100)
-          .then(quotesResult => {
-            if (!quotesResult.error) setQuotes(quotesResult.data || []);
-          })
-          .catch(err => console.error('Error loading quotes:', err));
+          .limit(100);
 
-        supabase
+        if (quotesError) throw quotesError;
+        setQuotes(quotesData || []);
+
+        const { data: selectionsData, error: selectionsError } = await supabase
           .from('job_artisan_selections')
           .select(`
             id,
@@ -239,31 +237,28 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
             )
           `)
           .in('job_request_id', jobIds)
-          .order('selection_order', { ascending: true })
-          .then(selectionsResult => {
-            if (!selectionsResult.error && selectionsResult.data) {
-              const selectionsByJob: Record<string, any[]> = {};
-              selectionsResult.data.forEach(sel => {
-                if (!selectionsByJob[sel.job_request_id]) {
-                  selectionsByJob[sel.job_request_id] = [];
-                }
-                selectionsByJob[sel.job_request_id].push(sel);
-              });
-              setJobSelections(selectionsByJob);
-            }
-          })
-          .catch(err => console.error('Error loading selections:', err));
+          .order('selection_order', { ascending: true });
 
-        supabase
+        if (!selectionsError && selectionsData) {
+          const selectionsByJob: Record<string, any[]> = {};
+          selectionsData.forEach(sel => {
+            if (!selectionsByJob[sel.job_request_id]) {
+              selectionsByJob[sel.job_request_id] = [];
+            }
+            selectionsByJob[sel.job_request_id].push(sel);
+          });
+          setJobSelections(selectionsByJob);
+        }
+
+        const { data: contractsData, error: contractsError } = await supabase
           .from('contracts')
-          .select('id, artisan_id, client_id, montant_total, statut, created_at')
+          .select('*')
           .eq('client_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(30)
-          .then(contractsResult => {
-            if (!contractsResult.error) setContracts(contractsResult.data || []);
-          })
-          .catch(err => console.error('Error loading contracts:', err));
+          .order('created_at', { ascending: false });
+
+        if (!contractsError) {
+          setContracts(contractsData || []);
+        }
       } else {
         setQuotes([]);
         setJobSelections({});
@@ -271,7 +266,6 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
       }
     } catch (error) {
       console.error('Erreur:', error);
-      setJobRequests([]);
       setLoading(false);
     }
   };
@@ -712,7 +706,7 @@ export default function ClientDashboard({ userId, onLogout }: ClientDashboardPro
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Valide jusqu'au:</span>
                                   <span className="font-semibold text-gray-900">
-                                    {quote.validite_jusqu_au ? new Date(quote.validite_jusqu_au).toLocaleDateString('fr-FR') : 'Non spécifié'}
+                                    {new Date(quote.validite_jusqu_au).toLocaleDateString('fr-FR')}
                                   </span>
                                 </div>
                               </div>

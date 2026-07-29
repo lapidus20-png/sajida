@@ -72,7 +72,7 @@ export default function GoogleMapPicker({
     };
 
     const initMap = () => {
-      if (!mapRef.current) return;
+      if (!mapRef.current || mapInstanceRef.current) return;
       try {
 
           const map = new google.maps.Map(mapRef.current, {
@@ -262,16 +262,16 @@ export default function GoogleMapPicker({
             </button>
           </div>
 
-          <div
-            ref={mapRef}
-            className="w-full h-96 rounded-lg border border-gray-300 bg-gray-100 flex items-center justify-center"
-          >
-            {loading && (
-              <div className="flex flex-col items-center gap-3 text-gray-600">
-                <Loader className="w-8 h-8 animate-spin" />
-                <p>Chargement de la carte...</p>
-              </div>
-            )}
+          <div className="relative w-full h-96 rounded-lg border border-gray-300 bg-gray-100">
+            <div ref={mapRef} className="absolute inset-0" />
+            <div
+              className={`absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-600 bg-gray-100 rounded-lg transition-opacity ${
+                loading ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <Loader className="w-8 h-8 animate-spin" />
+              <p>Chargement de la carte...</p>
+            </div>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

@@ -4,7 +4,16 @@ import { supabase } from '../lib/supabase';
 import UnifiedLocationPicker from './UnifiedLocationPicker';
 import MultiFileUpload from './MultiFileUpload';
 import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
-import { getCategoryInfo } from '../lib/categoryMapping';
+
+const SUPABASE_CATEGORY_FIELDS_BY_SPECIALTY: Record<
+  string,
+  { categorie_id: number; categorie_key: string }
+> = {
+  'Électricien bâtiment': {
+    categorie_id: 1,
+    categorie_key: 'electricite',
+  },
+};
 
 interface JobRequestFormProps {
   clientId: string;
@@ -41,9 +50,18 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!location) {
+      setError('Veuillez définir la position du chantier sur la carte.');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const categoryFields =
+        SUPABASE_CATEGORY_FIELDS_BY_SPECIALTY[formData.categorie];
+
       const { error: insertError } = await supabase
         .from('job_requests')
         .insert({
@@ -51,8 +69,8 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
           titre: formData.titre,
           description: formData.description,
           categorie: formData.categorie,
-          categorie_id: getCategoryInfo(formData.categorie)?.id || null,
-          categorie_key: getCategoryInfo(formData.categorie)?.key || null,
+          categorie_id: categoryFields?.categorie_id ?? null,
+          categorie_key: categoryFields?.categorie_key ?? null,
           localisation: formData.localisation,
           ville: formData.ville,
           budget_min: 0,
@@ -209,7 +227,7 @@ export default function JobRequestForm({ clientId, onSuccess, onCancel }: JobReq
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Localisation précise (optionnel)
+              Localisation précise
             </label>
             <button
               type="button"

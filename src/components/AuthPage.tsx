@@ -3,7 +3,6 @@ import { LogIn, UserPlus, Mail, Lock, Phone, MapPin, AlertCircle, Eye, Wrench, H
 import { supabase } from '../lib/supabase';
 import ClientDashboard from './ClientDashboard';
 import { JOB_CATEGORY_GROUPS } from '../lib/jobCategories';
-import { PhoneAuthModal } from './PhoneAuthModal';
 
 interface AuthPageProps {
   onSuccess: () => void;
@@ -16,7 +15,6 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [demoMode, setDemoMode] = useState(false);
-  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -82,14 +80,6 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            user_type: userType,
-            telephone: formData.telephone || '',
-            adresse: formData.adresse || '',
-            ville: formData.ville || '',
-          },
-        },
       });
 
       if (authError) throw new Error(authError.message);
@@ -97,19 +87,18 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
 
       setLoadingMessage('Configuration du profil...');
 
-      // Upsert user profile (trigger may have already created it)
-      const { error: userError } = await supabase.from('users').upsert({
-        id: authData.user.id,
-        email: authData.user.email ?? formData.email,
-        user_type: userType,
-        telephone: formData.telephone || '',
-        adresse: formData.adresse || '',
-        ville: formData.ville || '',
-      }, { onConflict: 'id' });
-
-      if (userError) throw new Error(`Erreur profil: ${userError.message}`);
-
       if (userType === 'artisan') {
+        const userResult = await supabase.from('users').insert({
+          id: authData.user.id,
+          email: authData.user.email,
+          user_type: userType,
+          telephone: formData.telephone || null,
+          adresse: formData.adresse || null,
+          ville: formData.ville || null,
+        });
+
+        if (userResult.error) throw new Error(`User profile error: ${userResult.error.message}`);
+
         const artisanResult = await supabase.from('artisans').insert({
           user_id: authData.user.id,
           nom: formData.nom,
@@ -122,7 +111,18 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
           disponible: true,
         });
 
-        if (artisanResult.error) throw new Error(`Erreur profil artisan: ${artisanResult.error.message}`);
+        if (artisanResult.error) throw new Error(`Artisan profile error: ${artisanResult.error.message}`);
+      } else {
+        const { error: userError } = await supabase.from('users').insert({
+          id: authData.user.id,
+          email: authData.user.email,
+          user_type: userType,
+          telephone: formData.telephone || null,
+          adresse: formData.adresse || null,
+          ville: formData.ville || null,
+        });
+
+        if (userError) throw new Error(`Database error: ${userError.message}`);
       }
 
       // Auth state change listener will handle the rest
@@ -137,19 +137,8 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   };
 
   return (
-    <>
-      {showPhoneAuth && (
-        <PhoneAuthModal
-          onClose={() => setShowPhoneAuth(false)}
-          onSuccess={() => {
-            setShowPhoneAuth(false);
-            onSuccess();
-          }}
-        />
-      )}
-
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-green-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="relative burkina-gradient text-white" style={{ height: '160px' }}>
             <div className="absolute inset-0 grid grid-cols-5 gap-2 p-3 opacity-50">
@@ -401,24 +390,6 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
                 )}
               </button>
             </form>
-
-            {mode === 'login' && (
-              <div className="mt-6">
-                <div className="flex items-center justify-center my-4">
-                  <div className="border-t border-gray-300 flex-grow"></div>
-                  <span className="px-4 text-gray-500 text-sm">ou</span>
-                  <div className="border-t border-gray-300 flex-grow"></div>
-                </div>
-
-                <button
-                  onClick={() => setShowPhoneAuth(true)}
-                  className="w-full bg-white border-2 border-yellow-500 text-yellow-700 py-3 rounded-lg font-medium hover:bg-yellow-50 transition flex items-center justify-center gap-2"
-                >
-                  <Phone className="w-5 h-5" />
-                  Connexion par SMS
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -436,6 +407,5 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
         </div>
       </div>
     </div>
-    </>
   );
 }
