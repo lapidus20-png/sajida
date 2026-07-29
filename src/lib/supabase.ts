@@ -1,24 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://fldkqlardekarhibnyyx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGtxbGFyZGVrYXJoaWJueXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNzg3OTksImV4cCI6MjA3NzY1NDc5OX0.Tx3px0qD74K_6p6OCbT_InyOZZ5mb3i48XY-IHfrUXY';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Remove any session stored under the old key (different project).
-// Do NOT clear 'builderhub-auth-v2' — that's the current project's key.
-localStorage.removeItem('builderhub-auth');
-// Clear any cached Supabase tokens from a previous project
-Object.keys(localStorage).forEach(key => {
-  if (key.startsWith('sb-') && !key.startsWith('sb-fldkqlardekarhibnyyx')) {
-    localStorage.removeItem(key);
-  }
-});
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase configuration!');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl);
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
+  throw new Error('Supabase configuration is missing. Please check your .env file.');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'builderhub-auth-v2',
+    storageKey: 'builderhub-auth',
   },
   db: {
     schema: 'public'

@@ -69,23 +69,22 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   const loadData = async () => {
     setLoading(true);
     try {
-      const [artisanResult, userResult] = await Promise.all([
-        supabase
-          .from('artisans')
-          .select('*')
-          .eq('id', artisanId)
-          .maybeSingle(),
-        supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle()
-      ]);
+      const artisanResult = await supabase
+        .from('artisans')
+        .select('id, user_id, nom, prenom, metier, note_moyenne, statut_verification, annees_experience, telephone, ville, latitude, longitude, description, portefeuille, certifications, tarif_horaire, assurance_rcpro')
+        .eq('id', artisanId)
+        .maybeSingle();
 
       if (artisanResult.error) throw artisanResult.error;
-      if (userResult.error) throw userResult.error;
-
       setArtisan(artisanResult.data);
+
+      const userResult = await supabase
+        .from('users')
+        .select('id, user_type, email, telephone, adresse, ville, created_at')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (userResult.error) throw userResult.error;
       setUserAccount(userResult.data);
       setLoading(false);
 
@@ -95,67 +94,63 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
 
       const jobsQuery = supabase
         .from('job_requests')
-        .select('id, titre, description, categorie, budget_max, localisation, ville, latitude, longitude, created_at, client_id')
+        .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
         .eq('statut', 'publiee')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
 
       if (jobCategories.length > 0) {
         jobsQuery.in('categorie', jobCategories);
       }
 
-      Promise.all([
+      const [jobsResult, quotesResult, reviewsResult, savedJobsResult] = await Promise.all([
         jobsQuery,
         supabase
           .from('quotes')
-          .select('id, job_request_id, montant_total, montant_acompte, delai_execution, description_travaux, statut, validite_jusqu_au, created_at')
+          .select('id, job_request_id, artisan_id, montant_total, montant_acompte, description_travaux, delai_execution, materiel_fourni, conditions_paiement, statut, validite_jusqu_au, created_at')
           .eq('artisan_id', artisanId)
           .order('created_at', { ascending: false })
-          .limit(30),
+          .limit(50),
         supabase
           .from('reviews')
-          .select('id, note, commentaire, verified, created_at')
+          .select('id, reviewer_id, note, commentaire, verified, created_at')
           .eq('reviewed_user_id', userId)
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(20),
         supabase
           .from('saved_jobs')
           .select('job_request_id')
-          .eq('artisan_id', artisanId),
-        unlockService.getUnlockedJobIds(artisanId),
-        walletService.getBalance(artisanId),
-        walletService.getTransactions(artisanId)
-      ]).then(async ([jobsResult, quotesResult, reviewsResult, savedJobsResult, unlockedJobIds, balance, transactions]) => {
-        if (!jobsResult.error) {
-          setJobRequests(jobsResult.data || []);
-        }
+          .eq('artisan_id', artisanId)
+      ]);
 
-        if (!quotesResult.error) {
-          setMyQuotes(quotesResult.data || []);
-        }
+      if (jobsResult.error) throw jobsResult.error;
+      setJobRequests(jobsResult.data || []);
 
-        if (!reviewsResult.error) {
-          setReviews(reviewsResult.data || []);
-        }
+      if (quotesResult.error) throw quotesResult.error;
+      setMyQuotes(quotesResult.data || []);
 
-        if (!savedJobsResult.error && savedJobsResult.data) {
-          setSavedJobs(savedJobsResult.data.map(sj => sj.job_request_id));
-        }
+      if (reviewsResult.error) throw reviewsResult.error;
+      setReviews(reviewsResult.data || []);
 
-        setUnlockedJobs(unlockedJobIds);
-        setWalletBalance(balance);
-        setWalletTransactions(transactions);
+      if (!savedJobsResult.error && savedJobsResult.data) {
+        setSavedJobs(savedJobsResult.data.map(sj => sj.job_request_id));
+      }
 
-        for (const jobId of unlockedJobIds) {
-          unlockService.getClientDetails(jobId, artisanId).then(details => {
-            if (details) {
-              setClientDetails(prev => ({ ...prev, [jobId]: details }));
-            }
-          });
+      const unlockedJobIds = await unlockService.getUnlockedJobIds(artisanId);
+      setUnlockedJobs(unlockedJobIds);
+
+      for (const jobId of unlockedJobIds) {
+        const details = await unlockService.getClientDetails(jobId, artisanId);
+        if (details) {
+          setClientDetails(prev => ({ ...prev, [jobId]: details }));
         }
-      }).catch(err => {
-        console.error('Error loading additional data:', err);
-      });
+      }
+
+      const balance = await walletService.getBalance(artisanId);
+      setWalletBalance(balance);
+
+      const transactions = await walletService.getTransactions(artisanId);
+      setWalletTransactions(transactions);
     } catch (error) {
       console.error('Erreur:', error);
       setLoading(false);
@@ -473,7 +468,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
   };
 
   const handleRemoveMetier = (metierToRemove: string) => {
-    if (editedProfile.metier && Array.isArray(editedProfile.metier)) {
+    if (editedProfile.metier) {
       setEditedProfile({
         ...editedProfile,
         metier: editedProfile.metier.filter(m => m !== metierToRemove)
@@ -1316,7 +1311,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {(() => {
-                                const metiers = Array.isArray(editedProfile.metier) ? editedProfile.metier : [];
+                                const metiers = editedProfile.metier || [];
                                 return metiers.length > 0 ? (
                                   metiers.map((m, idx) => (
                                     <span key={idx} className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">

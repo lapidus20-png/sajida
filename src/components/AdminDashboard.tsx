@@ -51,33 +51,88 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   useEffect(() => {
     loadAdminStats();
+    loadUsers();
+    loadJobRequests();
   }, []);
-
-  useEffect(() => {
-    if (activeTab === 'users') {
-      loadUsers();
-    } else if (activeTab === 'jobs') {
-      loadJobRequests();
-    }
-  }, [activeTab]);
 
   const loadAdminStats = async () => {
     try {
-      const [statsResult, pendingArtisansData] = await Promise.all([
-        supabase.rpc('get_admin_stats'),
-        supabase
-          .from('artisans')
-          .select('*')
-          .eq('statut_verification', 'en_attente')
-          .order('created_at', { ascending: false })
-          .limit(20)
+      const [
+        usersTotal,
+        usersClients,
+        usersArtisans,
+        jobsTotal,
+        jobsPubliees,
+        jobsEnCours,
+        jobsTerminees,
+        quotesTotal,
+        quotesAcceptes,
+        quotesRefuses,
+        quotesEnAttente,
+        reviewsTotal,
+        reviewsVerified,
+        artisansTotal,
+        artisansPending,
+        artisansVerified,
+        artisansRejected,
+      ] = await Promise.all([
+        supabase.from('users').select('*', { count: 'exact', head: true }),
+        supabase.from('users').select('*', { count: 'exact', head: true }).eq('user_type', 'client'),
+        supabase.from('users').select('*', { count: 'exact', head: true }).eq('user_type', 'artisan'),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'publiee'),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'en_cours'),
+        supabase.from('job_requests').select('*', { count: 'exact', head: true }).eq('statut', 'terminee'),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'accepte'),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'refuse'),
+        supabase.from('quotes').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+        supabase.from('reviews').select('*', { count: 'exact', head: true }),
+        supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('verified', true),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'en_attente'),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'verifie'),
+        supabase.from('artisans').select('*', { count: 'exact', head: true }).eq('statut_verification', 'rejete'),
       ]);
 
-      if (statsResult.data) {
-        setStats(statsResult.data);
-      }
+      setStats({
+        users: {
+          total: usersTotal.count || 0,
+          clients: usersClients.count || 0,
+          artisans: usersArtisans.count || 0,
+        },
+        jobs: {
+          total: jobsTotal.count || 0,
+          publiees: jobsPubliees.count || 0,
+          en_cours: jobsEnCours.count || 0,
+          terminees: jobsTerminees.count || 0,
+        },
+        quotes: {
+          total: quotesTotal.count || 0,
+          acceptes: quotesAcceptes.count || 0,
+          refuses: quotesRefuses.count || 0,
+          en_attente: quotesEnAttente.count || 0,
+        },
+        reviews: {
+          total: reviewsTotal.count || 0,
+          verified: reviewsVerified.count || 0,
+          pending: (reviewsTotal.count || 0) - (reviewsVerified.count || 0),
+        },
+        artisans: {
+          total: artisansTotal.count || 0,
+          pending: artisansPending.count || 0,
+          verified: artisansVerified.count || 0,
+          rejected: artisansRejected.count || 0,
+        },
+      });
 
-      setPendingArtisans(pendingArtisansData.data || []);
+      const { data: artisansData } = await supabase
+        .from('artisans')
+        .select('*')
+        .eq('statut_verification', 'en_attente')
+        .order('created_at', { ascending: false });
+
+      setPendingArtisans(artisansData || []);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -87,13 +142,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadUsers = async () => {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('users')
-        .select('id, email, user_type, telephone, ville, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      const { data, error } = await query;
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setAllUsers(data || []);
@@ -104,13 +156,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadJobRequests = async () => {
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from('job_requests')
-        .select('id, titre, description, categorie, statut, budget_max, ville, date_souhaitee, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      const { data, error } = await query;
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setAllJobRequests(data || []);

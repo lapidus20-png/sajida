@@ -100,7 +100,7 @@ export default function LocationPicker({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white flex items-center justify-between rounded-t-2xl">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <MapPin className="w-6 h-6" />
@@ -113,7 +113,7 @@ export default function LocationPicker({
           )}
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
               {error}
@@ -210,7 +210,9 @@ export default function LocationPicker({
               </div>
             </div>
           </div>
+        </div>
 
+        <div className="border-t border-gray-200 p-6 bg-gray-50 rounded-b-2xl">
           <div className="flex gap-3">
             {onClose && (
               <button
