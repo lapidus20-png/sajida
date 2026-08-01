@@ -67,6 +67,7 @@ export interface Artisan {
   quartier: string;
   adresse: string;
   metier: string[] | string;
+  metier_ids?: number[] | string | null;
   description: string;
   photo_url: string;
   annees_experience: number;
@@ -93,6 +94,7 @@ export interface JobRequest {
   titre: string;
   description: string;
   categorie: string;
+  categorie_id?: number | null;
   localisation: string;
   ville: string;
   budget_min: number;

@@ -33,6 +33,36 @@ const parseMetier = (metier: any): string[] => {
   return [];
 };
 
+const parseMetierIds = (rawValue: any): number[] => {
+  if (rawValue == null) return [];
+  if (Array.isArray(rawValue)) {
+    return rawValue
+      .map((v) => (typeof v === 'number' ? v : parseInt(String(v), 10)))
+      .filter((v) => !Number.isNaN(v));
+  }
+  if (typeof rawValue === 'number') return [rawValue];
+  if (typeof rawValue === 'string') {
+    const trimmed = rawValue.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return parseMetierIds(parsed);
+      } catch {
+        return [];
+      }
+    }
+    if (trimmed.includes(',')) {
+      return trimmed
+        .split(',')
+        .map((v) => parseInt(v.trim(), 10))
+        .filter((v) => !Number.isNaN(v));
+    }
+    const num = parseInt(trimmed, 10);
+    return Number.isNaN(num) ? [] : [num];
+  }
+  return [];
+};
+
 export default function ArtisanDashboard({ artisanId, userId, onLogout }: ArtisanDashboardProps) {
   const [artisan, setArtisan] = useState<Artisan | null>(null);
   const [userAccount, setUserAccount] = useState<UserType | null>(null);
@@ -71,7 +101,7 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
     try {
       const artisanResult = await supabase
         .from('artisans')
-        .select('id, user_id, nom, prenom, metier, note_moyenne, statut_verification, annees_experience, telephone, ville, latitude, longitude, description, portefeuille, certifications, tarif_horaire, assurance_rcpro')
+        .select('id, user_id, nom, prenom, metier, metier_ids, note_moyenne, statut_verification, annees_experience, telephone, ville, latitude, longitude, description, portefeuille, certifications, tarif_horaire, assurance_rcpro')
         .eq('id', artisanId)
         .maybeSingle();
 
@@ -92,15 +122,19 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
       const jobCategories = getJobCategoriesForMetiers(artisanMetiers);
       setFilteredCategories(jobCategories);
 
+      const metierIds = parseMetierIds(artisanResult.data?.metier_ids);
+
       const jobsQuery = supabase
         .from('job_requests')
-        .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie')
+        .select('id, titre, description, ville, localisation, statut, budget_min, budget_max, created_at, latitude, longitude, categorie, categorie_id')
         .eq('statut', 'publiee')
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (jobCategories.length > 0) {
-        jobsQuery.in('categorie', jobCategories);
+      if (metierIds.length > 0) {
+        jobsQuery.in('categorie_id', metierIds);
+      } else {
+        jobsQuery.eq('categorie_id', -1);
       }
 
       const [jobsResult, quotesResult, reviewsResult, savedJobsResult] = await Promise.all([
