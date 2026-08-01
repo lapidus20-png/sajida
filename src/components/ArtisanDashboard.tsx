@@ -106,6 +106,8 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         .maybeSingle();
 
       if (artisanResult.error) throw artisanResult.error;
+      console.log('[DEBUG metier_ids] value:', artisanResult.data?.metier_ids);
+      console.log('[DEBUG metier_ids] typeof:', typeof artisanResult.data?.metier_ids);
       setArtisan(artisanResult.data);
 
       const userResult = await supabase
