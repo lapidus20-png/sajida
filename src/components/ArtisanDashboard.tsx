@@ -139,6 +139,15 @@ export default function ArtisanDashboard({ artisanId, userId, onLogout }: Artisa
         jobsQuery.eq('categorie_id', -1);
       }
 
+      console.log(
+        "[Opportunity Filter]",
+        {
+          metierIds,
+          usingCategorieIdFilter: true
+        }
+      );
+      console.log("[Opportunity Filter] query path: .in('categorie_id',", metierIds, ")");
+
       const [jobsResult, quotesResult, reviewsResult, savedJobsResult] = await Promise.all([
         jobsQuery,
         supabase
